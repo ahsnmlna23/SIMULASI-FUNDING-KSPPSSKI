@@ -454,12 +454,13 @@ const PRODUK = {
     cmp:['durasi','bulanan'], cmpBul:[15e4, 25e4, 35e4, 5e5], levers:['bulanan','durasi'], target:5e8, mampu:3e5, mampuLbl:'Kemampuan setor per bulan',
     tag:'Setoran rutin jangka panjang' },
   nikah: { id:'nikah', nama:'Tabungan Nikah', pendek:'Nikah', status:'acc',
-    desc:'Setoran awal lalu setoran bulanan untuk biaya pernikahan. Nilai akhir dikunci saat akad.',
+    desc:'Setoran awal lalu setoran bulanan untuk biaya pernikahan. Nilai akhir dikunci saat akad. Wajib melampirkan surat keterangan menikah dari KUA.',
+    dokumen:'Surat keterangan menikah dari KUA',
     rail:'Awal min. 10 jt · min. 1 jt/bln',
     rate:.01, ms:2, pola:'awal',
     awal:{ min:1e7, def:1e7 }, bul:{ mode:'money', min:1e6, def:1e6, step:1e5 },
     dur:{ unit:'tahun', mode:'range', min:1, max:10, def:10, cmp:[3,5,7,10] },
-    syarat:['Setoran awal <b>min. Rp10 jt</b>', 'Setoran bulanan <b>min. Rp1 jt</b>', 'Nilai akhir <b>dikunci di akad</b>'],
+    syarat:['Setoran awal <b>min. Rp10 jt</b>', 'Setoran bulanan <b>min. Rp1 jt</b>', 'Nilai akhir <b>dikunci di akad</b>', 'Wajib <b>surat keterangan menikah dari KUA</b>'],
     cmp:['durasi','bulanan'], cmpBul:[1e6, 15e5, 2e6, 3e6], levers:['bulanan','durasi'], target:15e7, mampu:15e5, mampuLbl:'Kemampuan setor per bulan',
     tag:'Nilai akhir dikunci di akad' },
   dprumah: { id:'dprumah', nama:'Tabungan DP Rumah', pendek:'DP Rumany & Rumsy', status:'draf', kunci:true,
@@ -668,6 +669,7 @@ function extras(c){
   if (P.id === 'deposito') x.push(['Keuntungan bersih', `${rp(c.margin)} (${pc(c.margin / c.pokok, 1)})`]);
   if (P.berhenti) x.push(['Berhenti sebelum jatuh tempo', P.berhenti]);
   if (P.ahliWaris) x.push(['Force majeure', 'Dialihkan ke ahli waris']);
+  if (P.dokumen) x.push(['Dokumen wajib', P.dokumen]);
   return x;
 }
 function renderTicket(c){
@@ -713,6 +715,7 @@ function waText(c){
   L.push(`Total margin: ${rp(c.margin)}`);
   L.push(`*${P.pola === 'termin' ? 'Modal + keuntungan' : 'Nilai akhir'}: ${rp(c.nilai)}* — jatuh tempo ${mlab(ym, c.N - 1, true)}`);
   if (P.berhenti) L.push(`Berhenti sebelum jatuh tempo: ${P.berhenti.toLowerCase()}.`);
+  if (P.dokumen) L.push(`Dokumen wajib: ${P.dokumen}.`);
   L.push('');
   L.push('_Simulasi belum mengikat. Nilai final mengikuti akad KSPPS Syirkah Kebaikan Indonesia._');
   return L.join('\n');
