@@ -124,6 +124,9 @@ input[type="range"]::-moz-range-thumb{width:14px; height:14px; border-radius:50%
 .lock-item .k{font-size:12px; color:var(--muted); font-weight:600; display:flex; align-items:center; gap:6px}
 .lock-item .v{font-weight:800; font-size:17px; font-variant-numeric:tabular-nums}
 .lock-item .s{font-size:12px; color:var(--muted)}
+.lockbox{display:flex; gap:10px; align-items:flex-start; background:var(--brand-soft); color:var(--brand-fg); border-radius:10px; padding:10px 12px; font-size:13px; font-weight:600; line-height:1.45}
+.lockbox svg{flex:none; margin-top:2px}
+#internalBadge{align-self:center}
 
 /* Hasil */
 .results{display:flex; flex-direction:column; gap:16px; min-width:0}
@@ -279,6 +282,7 @@ textarea.copybox{width:100%; min-height:200px; border:1px solid var(--line); bor
       </div>
       <div class="sep" aria-hidden="true"></div>
       <div class="app-name"><strong>Simulasi Tabungan</strong>Divisi Funding · tabungan berjangka syariah</div>
+      <span class="chip warn" id="internalBadge" hidden>Versi internal · akses penuh</span>
     </div>
     <div class="addr">Jl. Kijang No. 34 A, Maricaya, Makassar<br>085608365555 · syirkahkebaikanindonesia@gmail.com</div>
   </div>
@@ -295,9 +299,14 @@ textarea.copybox{width:100%; min-height:200px; border:1px solid var(--line); bor
 
   <main class="bench">
     <section class="panel" aria-labelledby="h-atur">
-      <h2 id="h-atur">Atur tabungan <button class="btn ghost small" id="resetBtn" type="button">Kembalikan ke standar</button></h2>
+      <h2 id="h-atur"><span id="aturTtl">Atur tabungan</span> <button class="btn ghost small" id="resetBtn" type="button">Kembalikan ke standar</button></h2>
       <p class="sub" id="progSub"></p>
       <div class="stack" style="margin-top:16px">
+
+        <div class="field" id="lockView" hidden>
+          <div class="lockbox"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 10V7a6 6 0 1112 0v3h1a1 1 0 011 1v10a1 1 0 01-1 1H5a1 1 0 01-1-1V11a1 1 0 011-1h1zm2 0h8V7a4 4 0 10-8 0v3z" fill="currentColor"/></svg><span>Produk ini masih dikaji Credit Risk. Yang tampil adalah contoh simulasi tetap dan pengaturannya belum bisa diubah.</span></div>
+          <div class="locks" id="lockVals"></div>
+        </div>
 
         <div class="field" id="wAnak">
           <label for="anak">Jumlah anak <span class="hint">1 rekening per anak</span></label>
@@ -338,7 +347,7 @@ textarea.copybox{width:100%; min-height:200px; border:1px solid var(--line); bor
           <div class="locks" id="locks"></div>
         </div>
 
-        <div class="field">
+        <div class="field" id="wMulai">
           <label for="mulai">Bulan mulai menabung</label>
           <input type="month" id="mulai">
         </div>
@@ -366,7 +375,7 @@ textarea.copybox{width:100%; min-height:200px; border:1px solid var(--line); bor
       </article>
       <textarea class="copybox" id="copyBox" hidden readonly aria-label="Teks ringkasan"></textarea>
 
-      <section class="panel" aria-labelledby="h-cmp">
+      <section class="panel" id="secCmp" aria-labelledby="h-cmp">
         <h2 id="h-cmp">Bandingkan pilihan <span class="cmpseg" id="cmpSeg" role="group" aria-label="Bandingkan berdasarkan"></span></h2>
         <p class="sub" id="cmpSub"></p>
         <div class="opts" id="cmp"></div>
@@ -388,7 +397,7 @@ textarea.copybox{width:100%; min-height:200px; border:1px solid var(--line); bor
     </section>
   </main>
 
-  <section class="panel" style="margin-top:20px" aria-labelledby="h-fit">
+  <section class="panel" id="secFit" style="margin-top:20px" aria-labelledby="h-fit">
     <h2 id="h-fit">Hitung dari target nasabah</h2>
     <p class="sub" id="fitSub">Isi kebutuhan dana nasabah. Angka awal di bawah hanya contoh.</p>
     <div class="fit-grid">
@@ -410,30 +419,32 @@ textarea.copybox{width:100%; min-height:200px; border:1px solid var(--line); bor
 /* ===== Data produk: angka dan rumus dari file CR – Funding (Credit Risk) =====
    Rumus semua sheet: margin bulan t = tarif × (setoran bulan t + saldo bulan t−1), mulai bulan ke-`ms`.
    Pendidikan Anak: tingkat 2% dan 3% = 2× dan 3× margin dasar 1% (sesuai Surat Komite 001/KOMITE-FUND/KSPPS/XI/2026).
-   status: 'komite' = sudah ada surat komite (disetujui bersyarat) · 'draf' = belum diputus komite. */
+   status: 'acc' = sudah disetujui · 'draf' = belum diputus komite.
+   kunci: true = produk belum resmi; di versi publik pengaturannya terkunci (contoh tetap). */
+const AKSES_PENUH = false;   // true = versi internal (artifact privat) · false = versi publik (GitHub Pages)
 const TERMIN = [2, 1.5, 1.5, 2].map(x => x / 7);   // pola setoran Deposito Proyek: 14 / 10,5 / 10,5 / 14 jt dari 49 jt
 const PRODUK = {
-  pendidikan: { id:'pendidikan', nama:'Tabungan Pendidikan Anak', pendek:'Pendidikan Anak', status:'komite',
-    desc:'Setoran tetap Rp100.000 per bulan untuk biaya sekolah anak. Makin panjang durasi, makin tinggi tingkat margin.',
-    rail:'Rp100rb/bln · 3–12 th · margin 1–3%',
+  pendidikan: { id:'pendidikan', nama:'Tabungan Pendidikan Anak', pendek:'Pendidikan Anak', status:'acc',
+    desc:'Setoran Rp100.000 sampai Rp5 juta per bulan untuk biaya sekolah anak. Makin panjang durasi, makin tinggi tingkat margin.',
+    rail:'Rp100rb–5jt/bln · 3–12 th · margin 1–3%',
     rate:.01, ms:1, pola:'bulanan',
-    bul:{ mode:'fixed', def:1e5 }, anak:true,
+    bul:{ mode:'range', min:1e5, max:5e6, def:1e5, step:5e4 }, anak:true,
     dur:{ unit:'tahun', mode:'range', min:3, max:12, def:6, cmp:[3,5,6,8,9,12] },
     tier: y => y <= 5 ? { k:1, lab:'3–5 tahun' } : y <= 8 ? { k:2, lab:'6–8 tahun' } : { k:3, lab:'9–12 tahun' },
-    syarat:['Setoran <b>Rp100.000/bulan</b>, tetap', '3–5 th <b>1%</b> · 6–8 th <b>2%</b> · 9–12 th <b>3%</b>', 'Berhenti sebelum jatuh tempo: <b>pokok saja</b>'],
-    cmp:['durasi'], levers:['durasi'], target:20e6, mampu:2e5, mampuLbl:'Kemampuan setor per bulan',
+    syarat:['Setoran <b>Rp100.000–Rp5 jt</b>/bulan', '3–5 th <b>1%</b> · 6–8 th <b>2%</b> · 9–12 th <b>3%</b>', 'Berhenti sebelum jatuh tempo: <b>pokok saja</b>'],
+    cmp:['durasi','bulanan'], cmpBul:[1e5, 5e5, 1e6, 25e5, 5e6], levers:['bulanan','durasi'], target:20e6, mampu:2e5, mampuLbl:'Kemampuan setor per bulan',
     berhenti:'Pokok saja, tanpa margin', ahliWaris:true,
     tag:'Nilai margin total tercantum di akad' },
-  qurban: { id:'qurban', nama:'Tabungan Qurban', pendek:'Qurban', status:'draf',
-    desc:'Menabung 11 bulan untuk hewan qurban. Tujuh penabung bisa patungan satu ekor sapi.',
-    rail:'11 bulan · margin 1%/bln',
+  qurban: { id:'qurban', nama:'Tabungan Qurban', pendek:'Qurban', status:'acc',
+    desc:'Menabung untuk hewan qurban dengan target setara Rp220.000 × 11 bulan. Makin besar setoran, makin singkat waktu menabung, minimal 3 bulan.',
+    rail:'Min. 220rb/bln · 3–11 bulan',
     rate:.01, ms:2, pola:'bulanan',
-    bul:{ mode:'money', min:5e4, def:22e4, presets:[22e4, 55e4], step:1e4 },
-    dur:{ unit:'bulan', mode:'fixed', def:11 },
-    syarat:['Setoran <b>11 bulan</b>', 'Margin <b>1%/bulan</b> mulai bulan ke-2', 'Patungan sapi <b>7 orang</b>'],
-    cmp:['bulanan'], cmpBul:[22e4, 3e5, 4e5, 55e4], levers:['bulanan'], target:3e6, mampu:3e5, mampuLbl:'Kemampuan setor per bulan',
+    bul:{ mode:'money', min:22e4, def:22e4, presets:[22e4, 5e5, 1e6], step:1e4 },
+    dur:{ unit:'bulan', mode:'auto', min:3, max:11, def:11, acuan:22e4 },
+    syarat:['Setoran <b>min. Rp220.000</b>/bulan', 'Lama menabung <b>3–11 bulan</b>, mengikuti setoran', 'Margin <b>1%/bulan</b> mulai bulan ke-2'],
+    cmp:['bulanan'], cmpBul:[22e4, 3e5, 5e5, 1e6], levers:[], target:0, mampu:0, mampuLbl:'',
     tag:'Jatuh tempo menjelang qurban' },
-  pensiun: { id:'pensiun', nama:'Tabungan Hari Pensiun', pendek:'Pensiun', status:'draf',
+  pensiun: { id:'pensiun', nama:'Tabungan Hari Pensiun', pendek:'Pensiun', status:'draf', kunci:true,
     desc:'Setoran rutin jangka panjang untuk dana hari tua. Durasi minimal 15 tahun.',
     rail:'Rp150–500rb/bln · min. 15 th',
     rate:.02, ms:2, pola:'bulanan',
@@ -451,7 +462,7 @@ const PRODUK = {
     syarat:['Setoran awal <b>min. Rp10 jt</b>', 'Setoran bulanan <b>min. Rp1 jt</b>', 'Nilai akhir <b>dikunci di akad</b>'],
     cmp:['durasi','bulanan'], cmpBul:[1e6, 15e5, 2e6, 3e6], levers:['bulanan','durasi'], target:15e7, mampu:15e5, mampuLbl:'Kemampuan setor per bulan',
     tag:'Nilai akhir dikunci di akad' },
-  dprumah: { id:'dprumah', nama:'Tabungan DP Rumah', pendek:'DP Rumany & Rumsy', status:'draf',
+  dprumah: { id:'dprumah', nama:'Tabungan DP Rumah', pendek:'DP Rumany & Rumsy', status:'draf', kunci:true,
     desc:'Siapkan uang muka rumah untuk program Rumany atau Rumsy. Satu setoran awal, setoran bulanan boleh ditambah.',
     rail:'Setoran awal · 12 atau 24 bln',
     rate:.01, ms:2, pola:'awal',
@@ -460,7 +471,7 @@ const PRODUK = {
     syarat:['Setoran awal <b>min. Rp10 jt</b>', 'Setoran bulanan <b>opsional</b>, min. Rp1 jt', 'Durasi <b>12 atau 24 bulan</b>'],
     cmp:['awal','durasi'], cmpAwal:[1e7, 2e7, 3e7, 5e7], levers:['awal','durasi'], target:3e7, mampu:25e6, mampuLbl:'Dana awal yang dimiliki',
     tag:'Untuk DP program Rumany & Rumsy' },
-  deposito: { id:'deposito', nama:'Deposito Proyek', pendek:'Deposito Proyek', status:'draf',
+  deposito: { id:'deposito', nama:'Deposito Proyek', pendek:'Deposito Proyek', status:'draf', kunci:true,
     desc:'Dana ditempatkan bertahap dalam 4 termin mengikuti kebutuhan pembangunan, lalu modal dan keuntungan cair di bulan ke-6.',
     rail:'Min. 15 jt · cair bulan ke-6',
     rate:.03, ms:2, pola:'termin',
@@ -471,11 +482,23 @@ const PRODUK = {
     tag:'Modal + keuntungan cair bulan ke-6' }
 };
 const ORDER = ['pendidikan','qurban','pensiun','nikah','dprumah','deposito'];
-const STATUS_CHIP = { komite:'<span class="chip warn">Disetujui bersyarat</span>', draf:'<span class="chip mute">Draf · belum komite</span>' };
+const terkunci = P => !!P.kunci && !AKSES_PENUH;
+function chipStatus(P){
+  if (P.status === 'acc') return '<span class="chip ok">Disetujui</span>';
+  if (P.kunci) return AKSES_PENUH ? '<span class="chip mute">Draf · internal</span>' : '<span class="chip mute">Draf · contoh tetap</span>';
+  return '<span class="chip mute">Draf · belum komite</span>';
+}
 
 /* ===== Mesin hitung (sama persis dengan sheet) ===== */
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 function bulanDari(P, d){ return P.dur.unit === 'tahun' ? d * 12 : d; }
+/* Qurban: target = nilai akhir Rp220.000 × 11 bulan. Durasi = bulan pertama saldo mencapai target, minimal 3 bulan. */
+function targetAuto(P){ if (P._target == null) P._target = simulate(P, { durasi:P.dur.max, anak:1, bulanan:P.dur.acuan, awal:0, penempatan:0 }).nilai; return P._target; }
+function durasiAuto(P, o){
+  const T = targetAuto(P);
+  for (let n = P.dur.min; n <= P.dur.max; n++) if (simulate(P, { ...o, durasi:n }).nilai >= T - 0.5) return n;
+  return P.dur.max;
+}
 function clean(P, i){
   const o = { ...i };
   if (P.dur.mode === 'range') o.durasi = clamp(Math.round(o.durasi), P.dur.min, P.dur.max);
@@ -490,6 +513,7 @@ function clean(P, i){
   } else o.bulanan = 0;
   o.awal = P.awal ? Math.max(o.awal || 0, P.awal.min) : 0;
   o.penempatan = P.pen ? Math.max(o.penempatan || 0, P.pen.min) : 0;
+  if (P.dur.mode === 'auto') o.durasi = durasiAuto(P, o);
   return o;
 }
 function setoranBulan(P, i, t){
@@ -551,7 +575,7 @@ const ICON = {
 function renderRail(){
   if (!$('rail').children.length){
     $('rail').innerHTML = ORDER.map(id => { const P = PRODUK[id];
-      return `<button class="prog" type="button" data-p="${id}" aria-pressed="false"><span class="pn">${P.nama}</span><span class="pd">${P.rail}</span>${STATUS_CHIP[P.status]}</button>`; }).join('');
+      return `<button class="prog" type="button" data-p="${id}" aria-pressed="false"><span class="pn">${P.nama}</span><span class="pd">${P.rail}</span>${chipStatus(P)}</button>`; }).join('');
   }
   $('rail').querySelectorAll('[data-p]').forEach(b => b.setAttribute('aria-pressed', b.dataset.p === S.prod));
 }
@@ -560,12 +584,23 @@ const notFocused = el => document.activeElement !== el;
 
 /* ===== Render: panel atur ===== */
 function renderControls(c){
-  const P = c.P, i = c.i;
+  const P = c.P, i = c.i, L = terkunci(P);
   $('progSub').textContent = P.desc;
-  $('wAnak').hidden = !P.anak;
+  $('resetBtn').hidden = L;
+  $('aturTtl').textContent = L ? 'Contoh simulasi' : 'Atur tabungan';
+  $('lockView').hidden = !L;
+  if (L){
+    const v = P.pola === 'termin' ? ['Penempatan', rp(i.penempatan), '4 termin, bulan 1–4']
+      : P.pola === 'awal' ? ['Setoran awal', rp(i.awal), i.bulanan > 0 ? `lalu ${rp(i.bulanan)}/bulan` : 'tanpa setoran bulanan']
+      : ['Setoran per bulan', rp(i.bulanan), `${c.N} kali setoran`];
+    $('lockVals').innerHTML = `<div class="lock-item"><span class="k">${ICON.lock} ${v[0]}</span><span class="v">${v[1]}</span><span class="s">${v[2]}</span></div>
+      <div class="lock-item"><span class="k">${ICON.lock} Durasi</span><span class="v">${durLab(P, i.durasi)}</span><span class="s">${mlab(S.mulai, 0)} – ${mlab(S.mulai, c.N - 1)}</span></div>`;
+  }
+  $('wDurasi').hidden = L; $('wMulai').hidden = L;
+  $('wAnak').hidden = !P.anak || L;
   if (P.anak && notFocused($('anak'))) $('anak').value = i.anak;
 
-  $('wPenempatan').hidden = !P.pen;
+  $('wPenempatan').hidden = !P.pen || L;
   if (P.pen){
     $('penHint').textContent = `min. ${rpS(P.pen.min)}`;
     if (notFocused($('penempatan'))) $('penempatan').value = nf.format(S.penempatan);
@@ -573,7 +608,7 @@ function renderControls(c){
     $('penNote').innerHTML = 'Disetor 4 termin: ' + TERMIN.map((f, k) => `bulan ${k + 1} <b>${rpS(i.penempatan * f)}</b>`).join(' · ') + '.';
   }
 
-  $('wAwal').hidden = !P.awal;
+  $('wAwal').hidden = !P.awal || L;
   if (P.awal){
     $('awalHint').textContent = `min. ${rpS(P.awal.min)} · disetor bulan ke-1`;
     if (notFocused($('awal'))) $('awal').value = nf.format(S.awal);
@@ -581,11 +616,11 @@ function renderControls(c){
   }
 
   const B = P.bul;
-  $('wBulanan').hidden = !B;
+  $('wBulanan').hidden = !B || L;
   if (B){
     const fixed = B.mode === 'fixed';
-    $('bulLbl').textContent = P.pola === 'awal' ? 'Setoran bulanan (bulan ke-2 dst.)' : 'Setoran per bulan';
-    $('bulVal').innerHTML = fixed ? `${rpS(B.def)}<small>tetap${i.anak > 1 ? ` × ${i.anak} anak` : ''}</small>` : (i.bulanan > 0 ? `${rpS(i.bulanan)}<small>/bulan</small>` : `Rp 0<small>tanpa setoran bulanan</small>`);
+    $('bulLbl').textContent = P.pola === 'awal' ? 'Setoran bulanan (bulan ke-2 dst.)' : P.anak ? 'Setoran per bulan per anak' : 'Setoran per bulan';
+    $('bulVal').innerHTML = fixed ? `${rpS(B.def)}<small>tetap${i.anak > 1 ? ` × ${i.anak} anak` : ''}</small>` : (i.bulanan > 0 ? `${rpS(i.bulanan)}<small>/bulan${i.anak > 1 ? ` × ${i.anak} anak` : ''}</small>` : `Rp 0<small>tanpa setoran bulanan</small>`);
     $('bulRangeW').hidden = B.mode !== 'range';
     if (B.mode === 'range') { setRange($('bulRange'), i.bulanan, B.min, B.max, B.step); $('bulMinLbl').textContent = rpS(B.min); $('bulMaxLbl').textContent = rpS(B.max); }
     $('bulMoneyW').hidden = fixed;
@@ -596,22 +631,25 @@ function renderControls(c){
     $('bulMsg').hidden = !S.msg.bul; $('bulMsg').textContent = S.msg.bul || '';
     let note = '';
     if (fixed) note = `Setoran tetap sesuai ketentuan program.${P.anak ? ` Total ${rp(B.def * i.anak)} per bulan untuk ${i.anak} anak.` : ''}`;
-    else if (B.mode === 'range') note = `Batas setoran ${rp(B.min)} sampai ${rp(B.max)} per bulan.`;
+    else if (B.mode === 'range') note = `Batas setoran ${rp(B.min)} sampai ${rp(B.max)} per bulan${P.anak ? ' per anak, jumlahnya sama setiap bulan' : ''}.${P.anak && i.anak > 1 ? ` Total <b>${rp(i.bulanan * i.anak)}</b> per bulan untuk ${i.anak} anak.` : ''}`;
     else if (B.mode === 'optional') note = `Boleh dikosongkan. Bila diisi, minimal ${rp(B.min)} per bulan.`;
-    else if (P.id === 'qurban') note = `Contoh di file: ${rp(22e4)} atau ${rp(55e4)} per bulan.`;
+    else if (P.dur.mode === 'auto') note = `Minimal ${rp(B.min)} per bulan. Makin besar setoran, makin singkat waktu menabung.`;
     else note = `Minimal ${rp(B.min)} per bulan.`;
     $('bulNote').innerHTML = note;
   }
 
   const D = P.dur;
-  $('durVal').innerHTML = `${i.durasi}<small>${D.unit}${D.unit === 'tahun' ? ` · ${c.N} bulan` : ''}</small>`;
+  $('durVal').innerHTML = `${i.durasi}<small>${D.unit}${D.unit === 'tahun' ? ` · ${c.N} bulan` : ''}${D.mode === 'auto' ? ' · otomatis' : ''}</small>`;
   $('durRangeW').hidden = D.mode !== 'range';
   if (D.mode === 'range'){ setRange($('durRange'), i.durasi, D.min, D.max, 1); $('durMinLbl').textContent = `${D.min} ${D.unit === 'tahun' ? 'th' : 'bln'}`; $('durMaxLbl').textContent = `${D.max} ${D.unit === 'tahun' ? 'th' : 'bln'}`; }
   let seg = '';
   if (P.tier) seg = [[3,'3–5 th','1%'],[6,'6–8 th','2%'],[9,'9–12 th','3%']].map(([y, l, m]) => `<button type="button" data-dur="${y}" aria-pressed="${P.tier(y).k === c.k}">${l}<small>margin ${m}</small></button>`).join('');
   else if (D.mode === 'seg') seg = D.opts.map(d => `<button type="button" data-dur="${d}" aria-pressed="${d === i.durasi}">${d} bulan</button>`).join('');
   $('durSeg').hidden = !seg; $('durSeg').innerHTML = seg;
-  $('durNote').innerHTML = D.mode === 'fixed'
+  if (D.mode === 'auto'){
+    const T = targetAuto(P), lebih = c.N === D.min && c.nilai > T + 0.5;
+    $('durNote').innerHTML = `Dihitung otomatis: bulan pertama saldo mencapai target qurban <b>${rp(T)}</b> (setara ${rp(D.acuan)} × ${D.max} bulan), minimal ${D.min} bulan.${lebih ? ` Dengan setoran ini target sudah terlampaui di bulan ke-${D.min}.` : ''} Jatuh tempo <b>${mlab(S.mulai, c.N - 1)}</b>.`;
+  } else $('durNote').innerHTML = D.mode === 'fixed'
     ? `Durasi tetap ${durLab(P, D.def)}. Jatuh tempo <b>${mlab(S.mulai, c.N - 1)}</b>.`
     : `Setoran ${mlab(S.mulai, 0)} – ${mlab(S.mulai, c.N - 1)}. Jatuh tempo <b>${mlab(S.mulai, c.N - 1)}</b>.`;
 
@@ -656,9 +694,11 @@ function renderTicket(c){
     ...extras(c)
   ];
   $('tkStub').innerHTML = stub.map(([k, v]) => `<div><span class="k">${k}</span><span class="v">${v}</span></div>`).join('');
-  $('disclaim').textContent = P.status === 'draf'
+  $('disclaim').textContent = terkunci(P)
+    ? 'Contoh simulasi untuk produk yang masih dikaji Credit Risk. Angka dapat berubah dan belum bisa disesuaikan di halaman ini.'
+    : P.status === 'draf'
     ? 'Simulasi dari hitungan Credit Risk. Produk ini belum diputus komite, sehingga angka dapat berubah. Nilai final mengikuti akad.'
-    : 'Simulasi, belum mengikat. Nilai margin total dicantumkan di akad setelah program resmi diluncurkan.';
+    : 'Simulasi, belum mengikat. Nilai margin total dicantumkan di akad.';
 }
 function waText(c){
   const P = c.P, i = c.i, ym = S.mulai, L = [];
@@ -691,8 +731,11 @@ function renderCompare(c){
     lab = v => `${durLab(P, v)}${P.tier ? ` · margin ${P.tier(v).k}%` : ''}`;
     sub = `Setoran sama, durasi berbeda. ${P.tier ? 'Tingkat margin naik di 6 dan 9 tahun. ' : ''}Ketuk salah satu untuk memakainya.`;
   } else if (mode === 'bulanan'){
-    cur = c.i.bulanan; set = [...P.cmpBul]; mk = v => build(P.id, inp({ bulanan:v })); lab = v => `${rp(v)}/bulan`;
-    sub = `Durasi ${durLab(P, c.i.durasi)}. Makin besar setoran, makin besar nilai akhir. Ketuk salah satu untuk memakainya.`;
+    cur = c.i.bulanan; set = [...P.cmpBul]; mk = v => build(P.id, inp({ bulanan:v }));
+    const auto = P.dur.mode === 'auto';
+    lab = v => auto ? `${rp(v)}/bulan · ${build(P.id, inp({ bulanan:v })).N} bulan` : `${rp(v)}/bulan`;
+    sub = auto ? 'Makin besar setoran, makin singkat waktu menabung (minimal 3 bulan). Ketuk salah satu untuk memakainya.'
+      : `Durasi ${durLab(P, c.i.durasi)}. Makin besar setoran, makin besar nilai akhir. Ketuk salah satu untuk memakainya.`;
   } else if (mode === 'awal'){
     cur = c.i.awal; set = [...P.cmpAwal]; mk = v => build(P.id, inp({ awal:v })); lab = v => `Awal ${rpS(v)}`;
     sub = `Durasi ${durLab(P, c.i.durasi)}. Ketuk salah satu untuk memakainya.`;
@@ -863,7 +906,13 @@ function render(){
   S.durasi = c.i.durasi; S.anak = c.i.anak;
   $('fenceTxt').innerHTML = `<span><b>${c.P.nama}</b></span>` + c.P.syarat.map(s => `<span>${s}</span>`).join('');
   $('dock').innerHTML = `<span><span class="k">Nilai akhir · ${mlab(S.mulai, c.N - 1)}</span><span class="v">${rp(c.nilai)}</span></span><span class="r">${c.P.pendek}<span>setoran ${rpS(c.pokok)}</span></span>`;
-  renderRail(); renderControls(c); renderTicket(c); renderCompare(c); renderChart(c); renderTimeline(c); renderFit(c);
+  const L = terkunci(c.P);
+  $('internalBadge').hidden = !AKSES_PENUH;
+  $('secCmp').hidden = L;
+  $('secFit').hidden = L || !c.P.levers.length;
+  renderRail(); renderControls(c); renderTicket(c); renderChart(c); renderTimeline(c);
+  if (!L) renderCompare(c);
+  if (!$('secFit').hidden) renderFit(c);
   $('copyBox').value = waText(c);
 }
 function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 1800); }

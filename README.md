@@ -2,16 +2,19 @@
 
 Simulator tabungan untuk enam produk Divisi Funding:
 
-- Tabungan Pendidikan Anak (disetujui bersyarat, Surat Komite 001/KOMITE-FUND/KSPPS/XI/2026)
-- Tabungan Qurban (draf)
-- Tabungan Hari Pensiun (draf)
-- Tabungan Nikah (draf)
-- Tabungan DP Rumah — Rumany & Rumsy (draf)
-- Deposito Proyek (draf)
+| Produk | Status | Di website publik |
+|---|---|---|
+| Tabungan Pendidikan Anak | Disetujui | Bisa diatur (setoran Rp100.000–Rp5 jt/bulan, 3–12 tahun) |
+| Tabungan Qurban | Disetujui | Bisa diatur (setoran min. Rp220.000/bulan, 3–11 bulan otomatis) |
+| Tabungan Nikah | Draf | Bisa diatur |
+| Tabungan Hari Pensiun | Draf | Contoh tetap, terkunci |
+| Tabungan DP Rumah (Rumany & Rumsy) | Draf | Contoh tetap, terkunci |
+| Deposito Proyek | Draf | Contoh tetap, terkunci |
 
 Rumus dan angka mengikuti file **CR – Funding** dari Credit Risk:
 margin bulan t = tarif × (setoran bulan t + saldo bulan t−1). Pada Pendidikan Anak,
-tingkat 2% dan 3% dihitung sebagai 2× dan 3× margin dasar 1%.
+tingkat 2% dan 3% dihitung sebagai 2× dan 3× margin dasar 1%. Pada Qurban, lama menabung
+adalah bulan pertama saldo mencapai nilai akhir Rp220.000 × 11 bulan (Rp2.567.720), minimal 3 bulan.
 
 Seluruh halaman ada di satu file `index.html`, tanpa dependensi selain font Plus Jakarta Sans dari Google Fonts.
 
