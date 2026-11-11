@@ -436,13 +436,13 @@ const PRODUK = {
     berhenti:'Pokok saja, tanpa margin', ahliWaris:true,
     tag:'Nilai margin total tercantum di akad' },
   qurban: { id:'qurban', nama:'Tabungan Qurban', pendek:'Qurban', status:'acc',
-    desc:'Menabung untuk hewan qurban dengan target setara Rp220.000 × 11 bulan. Makin besar setoran, makin singkat waktu menabung, minimal 3 bulan.',
-    rail:'Min. 220rb/bln · 3–11 bulan',
+    desc:'Menabung untuk hewan qurban. Setoran Rp220.000 sampai Rp2 juta per bulan, lama menabung bebas dipilih 3 sampai 11 bulan. Tujuh penabung bisa patungan satu ekor sapi.',
+    rail:'Rp220rb–2jt/bln · 3–11 bulan',
     rate:.01, ms:2, pola:'bulanan',
-    bul:{ mode:'money', min:22e4, def:22e4, presets:[22e4, 5e5, 1e6], step:1e4 },
-    dur:{ unit:'bulan', mode:'auto', min:3, max:11, def:11, acuan:22e4 },
-    syarat:['Setoran <b>min. Rp220.000</b>/bulan', 'Lama menabung <b>3–11 bulan</b>, mengikuti setoran', 'Margin <b>1%/bulan</b> mulai bulan ke-2'],
-    cmp:['bulanan'], cmpBul:[22e4, 3e5, 5e5, 1e6], levers:[], target:0, mampu:0, mampuLbl:'',
+    bul:{ mode:'range', min:22e4, max:2e6, def:22e4, presets:[22e4, 5e5, 1e6, 2e6], step:1e4 },
+    dur:{ unit:'bulan', mode:'range', min:3, max:11, def:11, cmp:[3,6,9,11] },
+    syarat:['Setoran <b>Rp220.000–Rp2 jt</b>/bulan', 'Lama menabung <b>3–11 bulan</b>, bebas dipilih', 'Margin <b>1%/bulan</b> mulai bulan ke-2'],
+    cmp:['durasi','bulanan'], cmpBul:[22e4, 5e5, 1e6, 2e6], levers:['bulanan','durasi'], target:3e6, mampu:5e5, mampuLbl:'Kemampuan setor per bulan',
     tag:'Jatuh tempo menjelang qurban' },
   pensiun: { id:'pensiun', nama:'Tabungan Hari Pensiun', pendek:'Pensiun', status:'draf', kunci:true,
     desc:'Setoran rutin jangka panjang untuk dana hari tua. Durasi minimal 15 tahun.',
@@ -493,7 +493,7 @@ function chipStatus(P){
 /* ===== Mesin hitung (sama persis dengan sheet) ===== */
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 function bulanDari(P, d){ return P.dur.unit === 'tahun' ? d * 12 : d; }
-/* Qurban: target = nilai akhir Rp220.000 × 11 bulan. Durasi = bulan pertama saldo mencapai target, minimal 3 bulan. */
+/* Mode durasi 'auto' (saat ini tidak dipakai produk mana pun): durasi = bulan pertama saldo mencapai target acuan. */
 function targetAuto(P){ if (P._target == null) P._target = simulate(P, { durasi:P.dur.max, anak:1, bulanan:P.dur.acuan, awal:0, penempatan:0 }).nilai; return P._target; }
 function durasiAuto(P, o){
   const T = targetAuto(P);
