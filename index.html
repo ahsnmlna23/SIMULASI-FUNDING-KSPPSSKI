@@ -367,7 +367,7 @@ textarea.copybox{width:100%; min-height:200px; border:1px solid var(--line); bor
         </div>
         <div class="perf" aria-hidden="true"></div>
         <div class="tk-stub" id="tkStub"></div>
-        <div class="tk-actions">
+        <div class="tk-actions" id="tkActions">
           <button class="btn" id="copyBtn" type="button">Salin ringkasan untuk WhatsApp</button>
           <button class="btn alt" id="showTextBtn" type="button">Lihat teks</button>
         </div>
@@ -677,6 +677,7 @@ function renderTicket(c){
   $('tkProg').textContent = `${P.nama} · ${durLab(P, i.durasi)}` + (i.anak > 1 ? ` · ${i.anak} anak` : '');
   $('tkTag').textContent = P.status === 'draf' ? 'Draf · menunggu komite' : P.tag;
   $('tkTag').classList.toggle('draf', P.status === 'draf');
+  $('tkActions').hidden = terkunci(P); if (terkunci(P)) $('copyBox').hidden = true;
   $('tkHero').innerHTML = `<span class="lab">${P.pola === 'termin' ? 'Modal + keuntungan cair' : 'Nilai akhir saat jatuh tempo'}</span>
     <span class="val">${rp(c.nilai)}</span>
     <span class="then">dari ${P.pola === 'termin' ? 'penempatan' : 'total setoran'} ${rp(c.pokok)}${i.anak > 1 ? ` · ${rp(c.nilai / i.anak)} per anak` : ''}</span>`;
@@ -702,22 +703,60 @@ function renderTicket(c){
     ? 'Simulasi dari hitungan Credit Risk. Produk ini belum diputus komite, sehingga angka dapat berubah. Nilai final mengikuti akad.'
     : 'Simulasi, belum mengikat. Nilai margin total dicantumkan di akad.';
 }
+/* ===== Teks WhatsApp untuk calon nasabah (angka mengikuti simulasi yang dipilih) ===== */
+const WA = {
+  pendidikan: { pitch:'Siapkan biaya sekolah anak sejak sekarang dengan menabung rutin setiap bulan.', ket:[
+    'Setoran Rp100.000 – Rp5.000.000 per bulan, jumlahnya sama setiap bulan',
+    '1 rekening untuk 1 anak',
+    'Tambahan dana (margin) dihitung setiap bulan dari saldo tabungan',
+    'Nilai tambahan dana dicantumkan di akad sejak awal',
+    'Bila berhenti sebelum jatuh tempo, yang dicairkan hanya setoran pokok',
+    'Bila terjadi force majeure, hak tabungan dialihkan kepada ahli waris yang tercantum di akad'] },
+  qurban: { pitch:'Siapkan dana qurban dengan menabung rutin setiap bulan.', ket:[
+    'Setoran Rp220.000 – Rp2.000.000 per bulan',
+    'Lama menabung 3 – 11 bulan, bebas dipilih',
+    'Tambahan dana (margin) dihitung setiap bulan dari saldo tabungan, mulai bulan ke-2',
+    'Tujuh penabung bisa patungan untuk satu ekor sapi'] },
+  nikah: { pitch:'Siapkan biaya pernikahan dengan setoran awal dan setoran rutin setiap bulan.', ket:[
+    'Setoran awal minimal Rp10.000.000',
+    'Setoran bulanan minimal Rp1.000.000',
+    'Tambahan dana (margin) dihitung setiap bulan dari saldo tabungan, mulai bulan ke-2',
+    'Nilai akhir dikunci di akad',
+    'Wajib melampirkan surat keterangan menikah dari KUA'] },
+  pensiun: { pitch:'Siapkan dana hari tua dengan setoran rutin jangka panjang.', ket:[
+    'Setoran Rp150.000 – Rp500.000 per bulan',
+    'Durasi minimal 15 tahun',
+    'Tambahan dana (margin) dihitung setiap bulan dari saldo tabungan, mulai bulan ke-2'] },
+  dprumah: { pitch:'Siapkan uang muka rumah untuk program Rumany atau Rumsy.', ket:[
+    'Setoran awal minimal Rp10.000.000',
+    'Setoran bulanan opsional, minimal Rp1.000.000 bila diisi',
+    'Durasi 12 atau 24 bulan',
+    'Tambahan dana (margin) dihitung setiap bulan dari saldo tabungan, mulai bulan ke-2'] },
+  deposito: { pitch:'Penempatan dana bertahap untuk kebutuhan pembangunan proyek.', ket:[
+    'Penempatan minimal Rp15.000.000',
+    'Disetor dalam 4 termin, bulan ke-1 sampai ke-4',
+    'Modal dan keuntungan dicairkan di bulan ke-6'] }
+};
+const rpw = n => 'Rp' + nf.format(Math.round(n));
 function waText(c){
-  const P = c.P, i = c.i, ym = S.mulai, L = [];
-  L.push(`*Simulasi ${P.nama} — KSPPS Syirkah Kebaikan Indonesia*`);
-  if (P.anak) L.push(`Jumlah anak: ${i.anak} (1 rekening per anak)`);
-  if (P.pola === 'termin') L.push(`Penempatan: ${rp(i.penempatan)} dalam 4 termin (${TERMIN.map(f => rpS(i.penempatan * f)).join(' / ')})`);
-  if (P.pola === 'awal') L.push(`Setoran awal: ${rp(i.awal)}` + (i.bulanan > 0 ? `, lalu ${rp(i.bulanan)}/bulan` : ''));
-  if (P.pola === 'bulanan') L.push(`Setoran: ${rp(i.bulanan * i.anak)}/bulan × ${c.N} bulan`);
-  L.push(`Durasi: ${durLab(P, i.durasi)} (${mlab(ym, 0)} – ${mlab(ym, c.N - 1)})`);
-  L.push(`Margin: ${P.tier ? `tingkat ${c.k}% (${c.tier.lab})` : `${pc(P.rate)} per bulan`}`);
-  L.push(`Total setoran: ${rp(c.pokok)}`);
-  L.push(`Total margin: ${rp(c.margin)}`);
-  L.push(`*${P.pola === 'termin' ? 'Modal + keuntungan' : 'Nilai akhir'}: ${rp(c.nilai)}* — jatuh tempo ${mlab(ym, c.N - 1, true)}`);
-  if (P.berhenti) L.push(`Berhenti sebelum jatuh tempo: ${P.berhenti.toLowerCase()}.`);
-  if (P.dokumen) L.push(`Dokumen wajib: ${P.dokumen}.`);
-  L.push('');
-  L.push('_Simulasi belum mengikat. Nilai final mengikuti akad KSPPS Syirkah Kebaikan Indonesia._');
+  const P = c.P, i = c.i, ym = S.mulai, W = WA[P.id], L = [];
+  const sv = P.pola === 'termin' ? 'penempatan' : 'setoran', dur = durLab(P, i.durasi);
+  L.push(`*${P.nama.toUpperCase()}*`, 'KSPPS Syirkah Kebaikan Indonesia', '', W.pitch, '', '*Ketentuan*', ...W.ket.map(k => '• ' + k), '');
+  L.push(`*Simulasi ${P.pola === 'termin' ? 'penempatan' : 'menabung'} ${dur}${P.dur.unit === 'tahun' ? ` (${c.N} bulan)` : ''}*`);
+  if (P.anak) L.push(`• Jumlah anak: ${i.anak} (${i.anak} rekening)`);
+  if (P.pola === 'bulanan') L.push(P.anak && i.anak > 1 ? `• Setoran: ${rpw(i.bulanan)}/bulan per anak (total ${rpw(i.bulanan * i.anak)}/bulan)` : `• Setoran: ${rpw(i.bulanan)}/bulan`);
+  if (P.pola === 'awal'){ L.push(`• Setoran awal: ${rpw(i.awal)}`); if (i.bulanan > 0) L.push(`• Setoran bulanan: ${rpw(i.bulanan)} (bulan ke-2 s.d. ke-${c.N})`); }
+  if (P.pola === 'termin') L.push(`• Penempatan: ${rpw(i.penempatan)} dalam 4 termin (${TERMIN.map(f => rpw(i.penempatan * f)).join(' / ')})`);
+  L.push(`• Periode: ${mlab(ym, 0, true)} – ${mlab(ym, c.N - 1, true)}`);
+  L.push(`• Total ${sv}: ${rpw(c.pokok)}`);
+  const kum = c.margin / c.pokok;
+  L.push(`• Estimasi tambahan dana: ${rpw(c.margin)} (${pc(kum, 2)} dari total ${sv} untuk seluruh ${dur}` + (c.N >= 12 ? `; rata-rata ${pc(kum / (c.N / 12), 2)} per tahun dari total ${sv})` : ')'));
+  L.push(`• *Estimasi diterima: ±${rpw(c.nilai)}*, jatuh tempo ${mlab(ym, c.N - 1, true)}`);
+  if (P.id === 'qurban') L.push(`• Bila patungan 7 orang: ±${rpw(c.nilai * 7)}`);
+  if (P.id === 'dprumah') L.push(`• Cukup untuk DP 25% rumah seharga ±${rpw(c.nilai / .25)}`);
+  L.push('', '_Angka di atas adalah estimasi dan belum mengikat. Nilai final mengikuti akad yang ditandatangani nasabah dan KSPPS Syirkah Kebaikan Indonesia._');
+  if (P.status === 'draf') L.push('_Produk ini masih dalam kajian, sehingga angka dapat berubah._');
+  L.push('', '*Informasi & pendaftaran*', 'KSPPS Syirkah Kebaikan Indonesia', 'Jl. Kijang No. 34 A, Maricaya, Kota Makassar', 'Telp/WA: 0856-0836-5555', 'Email: syirkahkebaikanindonesia@gmail.com');
   return L.join('\n');
 }
 
