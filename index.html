@@ -765,8 +765,6 @@ function waText(c){
   if (P.pola === 'termin') L.push(`• Penempatan: ${rpw(i.penempatan)} dalam 4 termin (${TERMIN.map(f => rpw(i.penempatan * f)).join(' / ')})`);
   L.push(`• Periode: ${mlab(ym, 0, true)} – ${mlab(ym, c.N - 1, true)}`);
   L.push(`• Total ${sv}: ${rpw(c.pokok)}`);
-  const kum = c.margin / c.pokok;
-  L.push(`• Estimasi tambahan dana: ${rpw(c.margin)} (${pc(kum, 2)} dari total ${sv} untuk seluruh ${dur})`);
   L.push(`• *Estimasi diterima: ±${rpw(c.nilai)}*, jatuh tempo ${mlab(ym, c.N - 1, true)}`);
   if (P.id === 'qurban') L.push(`• Bila patungan 7 orang: ±${rpw(c.nilai * 7)}`);
   if (P.id === 'dprumah') L.push(`• Cukup untuk DP 25% rumah seharga ±${rpw(c.nilai / .25)}`);
