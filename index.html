@@ -112,6 +112,8 @@ input[type="range"]::-moz-range-thumb{width:14px; height:14px; border-radius:50%
 .seg button{flex:1 1 0; border:1px solid var(--line); background:var(--surface); border-radius:9px; padding:8px 4px; min-width:0; min-height:40px; cursor:pointer; font-weight:600; font-size:13px; font-variant-numeric:tabular-nums; line-height:1.25}
 .seg button small{display:block; font-size:11px; font-weight:600; opacity:.8}
 .seg button[aria-pressed="true"]{background:var(--brand); border-color:var(--brand); color:var(--on-brand)}
+.seg button{position:relative}
+.seg button.std::after{content:""; position:absolute; top:5px; right:5px; width:6px; height:6px; border-radius:50%; background:var(--cyan)}
 .note{font-size:12.5px; color:var(--muted); margin:0}
 .note b{color:var(--ink)}
 .clampmsg{font-size:12.5px; color:var(--warn); background:var(--warn-soft); border-radius:8px; padding:6px 10px}
@@ -344,6 +346,11 @@ textarea.copybox{width:100%; min-height:200px; border:1px solid var(--line); bor
 
         <div class="field">
           <div class="lbl"><span>Margin</span><span class="hint">mengikuti hitungan Credit Risk</span></div>
+          <div class="field" id="mSegW" hidden>
+            <div class="lbl"><span>Pilih margin</span><span class="big-val" id="mVal"></span></div>
+            <div class="seg" id="mSeg" role="group" aria-label="Pilih margin"></div>
+            <p class="note" id="mNote"></p>
+          </div>
           <div class="locks" id="locks"></div>
         </div>
 
@@ -431,7 +438,8 @@ const PRODUK = {
     bul:{ mode:'range', min:1e5, max:5e6, def:1e5, step:5e4 }, anak:true,
     dur:{ unit:'tahun', mode:'range', min:3, max:12, def:6, cmp:[3,5,6,8,9,12] },
     tier: y => y <= 5 ? { k:1, lab:'3–5 tahun' } : y <= 8 ? { k:2, lab:'6–8 tahun' } : { k:3, lab:'9–12 tahun' },
-    syarat:['Setoran <b>Rp100.000–Rp5 jt</b>/bulan', '3–5 th <b>1%</b> · 6–8 th <b>2%</b> · 9–12 th <b>3%</b>', 'Berhenti sebelum jatuh tempo: <b>pokok saja</b>'],
+    syarat:['Setoran <b>Rp100.000–Rp5 jt</b>/bulan', 'Margin <b>1%–3%</b>, standar mengikuti durasi', 'Berhenti sebelum jatuh tempo: <b>pokok saja</b>'],
+    marginAdj:{ min:1, max:3, opts:[1, 1.5, 2, 2.5, 3] },
     cmp:['durasi','bulanan'], cmpBul:[1e5, 5e5, 1e6, 25e5, 5e6], levers:['bulanan','durasi'], target:20e6, mampu:2e5, mampuLbl:'Kemampuan setor per bulan',
     berhenti:'Pokok saja, tanpa margin', ahliWaris:true,
     tag:'Nilai margin total tercantum di akad' },
@@ -515,6 +523,7 @@ function clean(P, i){
   o.awal = P.awal ? Math.max(o.awal || 0, P.awal.min) : 0;
   o.penempatan = P.pen ? Math.max(o.penempatan || 0, P.pen.min) : 0;
   if (P.dur.mode === 'auto') o.durasi = durasiAuto(P, o);
+  if (P.marginAdj) o.margin = o.margin != null ? clamp(o.margin, P.marginAdj.min, P.marginAdj.max) : P.tier(o.durasi).k;
   return o;
 }
 function setoranBulan(P, i, t){
@@ -525,7 +534,7 @@ function setoranBulan(P, i, t){
 function build(prod, raw){ const P = PRODUK[prod]; return simulate(P, clean(P, raw)); }
 function simulate(P, i){
   const N = bulanDari(P, i.durasi);
-  const tier = P.tier ? P.tier(i.durasi) : null, k = tier ? tier.k : 1;
+  const tier = P.tier ? P.tier(i.durasi) : null, k = P.marginAdj ? i.margin : tier ? tier.k : 1;
   let bal = 0, pokok = 0; const rows = [];
   for (let t = 1; t <= N; t++){
     const d = setoranBulan(P, i, t);
@@ -535,7 +544,7 @@ function simulate(P, i){
   }
   const nilai = rows.length ? rows[rows.length - 1].saldo : 0;
   const margin = nilai - pokok;
-  return { P, i, N, k, tier, rows, pokok, nilai, margin, rateLab: tier ? `${k}%` : pc(P.rate) };
+  return { P, i, N, k, tier, rows, pokok, nilai, margin, rateLab: tier ? pcn(k) : pc(P.rate), std: tier ? tier.k : null };
 }
 
 /* ===== Format ===== */
@@ -543,6 +552,7 @@ const nf = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 });
 const rp = n => (n < -0.5 ? '−' : '') + 'Rp ' + nf.format(Math.abs(Math.round(n)));
 const rpS = n => { const a = Math.abs(n), s = n < -0.5 ? '−' : ''; if (a >= 1e9) return s + 'Rp ' + (a/1e9).toLocaleString('id-ID', {maximumFractionDigits:2}) + ' M'; if (a >= 1e6) return s + 'Rp ' + (a/1e6).toLocaleString('id-ID', {maximumFractionDigits:2}) + ' jt'; if (a >= 1e3) return s + 'Rp ' + (a/1e3).toLocaleString('id-ID', {maximumFractionDigits:0}) + ' rb'; return rp(n); };
 function pc(x, d = 0){ return (x * 100).toLocaleString('id-ID', { maximumFractionDigits: d }) + '%'; }
+const pcn = v => v.toLocaleString('id-ID', { maximumFractionDigits: 2 }) + '%';
 const parseRp = s => { const d = String(s).replace(/[^\d]/g, ''); return d ? Number(d) : 0; };
 const BLN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 const BLNF = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
@@ -552,7 +562,7 @@ const $ = id => document.getElementById(id);
 
 /* ===== State ===== */
 const now = new Date();
-const S = { prod:'pendidikan', durasi:6, anak:1, bulanan:1e5, awal:0, penempatan:0,
+const S = { prod:'pendidikan', durasi:6, anak:1, bulanan:1e5, awal:0, penempatan:0, margin:null,
   mulai: now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0'),
   cmp:'durasi', detail:false, msg:{}, fit:{} };
 ORDER.forEach(id => { S.fit[id] = { target: PRODUK[id].target, mampu: PRODUK[id].mampu }; });
@@ -560,9 +570,9 @@ function applyProduk(id){
   const P = PRODUK[id]; S.prod = id;
   S.durasi = P.dur.def; S.anak = 1;
   S.bulanan = P.bul ? P.bul.def : 0; S.awal = P.awal ? P.awal.def : 0; S.penempatan = P.pen ? P.pen.def : 0;
-  S.cmp = P.cmp[0]; S.msg = {};
+  S.cmp = P.cmp[0]; S.msg = {}; S.margin = null;
 }
-const inp = (o = {}) => ({ durasi:S.durasi, anak:S.anak, bulanan:S.bulanan, awal:S.awal, penempatan:S.penempatan, ...o });
+const inp = (o = {}) => ({ durasi:S.durasi, anak:S.anak, bulanan:S.bulanan, awal:S.awal, penempatan:S.penempatan, margin:S.margin, ...o });
 
 const ICON = {
   coin:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5" fill="currentColor"/></svg>',
@@ -644,7 +654,7 @@ function renderControls(c){
   $('durRangeW').hidden = D.mode !== 'range';
   if (D.mode === 'range'){ setRange($('durRange'), i.durasi, D.min, D.max, 1); $('durMinLbl').textContent = `${D.min} ${D.unit === 'tahun' ? 'th' : 'bln'}`; $('durMaxLbl').textContent = `${D.max} ${D.unit === 'tahun' ? 'th' : 'bln'}`; }
   let seg = '';
-  if (P.tier) seg = [[3,'3–5 th','1%'],[6,'6–8 th','2%'],[9,'9–12 th','3%']].map(([y, l, m]) => `<button type="button" data-dur="${y}" aria-pressed="${P.tier(y).k === c.k}">${l}<small>margin ${m}</small></button>`).join('');
+  if (P.tier && !P.marginAdj) seg = [[3,'3–5 th','1%'],[6,'6–8 th','2%'],[9,'9–12 th','3%']].map(([y, l, m]) => `<button type="button" data-dur="${y}" aria-pressed="${P.tier(y).k === c.k}">${l}<small>margin ${m}</small></button>`).join('');
   else if (D.mode === 'seg') seg = D.opts.map(d => `<button type="button" data-dur="${d}" aria-pressed="${d === i.durasi}">${d} bulan</button>`).join('');
   $('durSeg').hidden = !seg; $('durSeg').innerHTML = seg;
   if (D.mode === 'auto'){
@@ -654,9 +664,15 @@ function renderControls(c){
     ? `Durasi tetap ${durLab(P, D.def)}. Jatuh tempo <b>${mlab(S.mulai, c.N - 1)}</b>.`
     : `Setoran ${mlab(S.mulai, 0)} – ${mlab(S.mulai, c.N - 1)}. Jatuh tempo <b>${mlab(S.mulai, c.N - 1)}</b>.`;
 
-  const rateTxt = P.tier ? `${c.k}%` : `${pc(P.rate)} per bulan`;
-  const rateSub = P.tier ? `tingkat ${c.tier.lab} · ${c.k > 1 ? `${c.k}× margin dasar 1%/bulan` : 'dihitung dari saldo tiap bulan'}` : `dihitung dari saldo, mulai bulan ke-${P.ms}`;
-  $('locks').innerHTML = `<div class="lock-item"><span class="k">${ICON.lock} Tingkat margin</span><span class="v">${rateTxt}</span><span class="s">${rateSub}</span></div>
+  $('mSegW').hidden = !P.marginAdj || L;
+  if (P.marginAdj){
+    $('mVal').innerHTML = `${pcn(c.k)}<small>${Math.abs(c.k - c.std) < 1e-9 ? 'standar' : 'pilihan'}</small>`;
+    $('mSeg').innerHTML = P.marginAdj.opts.map(v => `<button type="button" data-m="${v}" aria-pressed="${Math.abs(c.k - v) < 1e-9}" class="${Math.abs(c.std - v) < 1e-9 ? 'std' : ''}">${pcn(v)}</button>`).join('');
+    $('mNote').innerHTML = `Titik biru = margin standar untuk durasi ${c.tier.lab} (${pcn(c.std)}). ${c.k === 1 ? 'Margin 1% dihitung dari saldo setiap bulan.' : `Margin ${pcn(c.k)} dihitung ${pcn(c.k).replace('%', '')}× margin dasar 1% per bulan dari saldo.`}`;
+  }
+  const rateTxt = P.tier ? `${pcn(c.k)}` : `${pc(P.rate)} per bulan`;
+  const rateSub = P.tier ? `tingkat ${c.tier.lab} · ${c.k > 1 ? `${pcn(c.k).replace('%', '')}× margin dasar 1%/bulan` : 'dihitung dari saldo tiap bulan'}` : `dihitung dari saldo, mulai bulan ke-${P.ms}`;
+  $('locks').innerHTML = (P.marginAdj && !L ? '' : `<div class="lock-item"><span class="k">${ICON.lock} Tingkat margin</span><span class="v">${rateTxt}</span><span class="s">${rateSub}</span></div>`) + `
     <div class="lock-item"><span class="k">${ICON.lock} Total margin</span><span class="v">${rp(c.margin)}</span><span class="s">${pc(c.margin / c.pokok, 1)} dari total setoran</span></div>`;
   $('mulai').value = S.mulai;
 }
@@ -690,7 +706,7 @@ function renderTicket(c){
   const stub = [
     [P.pola === 'termin' ? 'Mulai penempatan' : 'Mulai menabung', mlab(ym, 0)],
     [P.pola === 'termin' ? 'Lama penempatan' : 'Lama menabung', `${c.N} bulan`],
-    ['Tingkat margin', P.tier ? `${c.k}% (${c.tier.lab})` : `${pc(P.rate)}/bulan, mulai bulan ke-${P.ms}`],
+    ['Tingkat margin', P.tier ? `${pcn(c.k)}${P.marginAdj ? (Math.abs(c.k - c.std) < 1e-9 ? ' (standar)' : ` (standar ${pcn(c.std)})`) : ` (${c.tier.lab})`}` : `${pc(P.rate)}/bulan, mulai bulan ke-${P.ms}`],
     [P.pola === 'termin' ? 'Total penempatan' : 'Total setoran', rp(c.pokok)],
     ['Total margin', rp(c.margin)],
     ['Nilai akhir', rp(c.nilai)],
@@ -770,8 +786,9 @@ function renderCompare(c){
   const mode = S.cmp; let set, cur, mk, lab, sub;
   if (mode === 'durasi'){
     cur = c.i.durasi; set = [...P.dur.cmp]; mk = v => build(P.id, inp({ durasi:v }));
-    lab = v => `${durLab(P, v)}${P.tier ? ` · margin ${P.tier(v).k}%` : ''}`;
-    sub = `Setoran sama, durasi berbeda. ${P.tier ? 'Tingkat margin naik di 6 dan 9 tahun. ' : ''}Ketuk salah satu untuk memakainya.`;
+    const ikut = P.tier && S.margin == null;
+    lab = v => `${durLab(P, v)}${ikut ? ` · margin ${pcn(P.tier(v).k)}` : ''}`;
+    sub = `Setoran sama, durasi berbeda. ${ikut ? 'Margin standar naik di 6 dan 9 tahun. ' : P.tier ? `Margin tetap ${pcn(c.k)} sesuai pilihan. ` : ''}Ketuk salah satu untuk memakainya.`;
   } else if (mode === 'bulanan'){
     cur = c.i.bulanan; set = [...P.cmpBul]; mk = v => build(P.id, inp({ bulanan:v }));
     const auto = P.dur.mode === 'auto';
@@ -980,6 +997,7 @@ moneyInput('fMampu', v => { S.fit[S.prod].mampu = v; }, () => S.fit[S.prod].mamp
 $('bulRange').addEventListener('input', e => { S.bulanan = Number(e.target.value); S.msg.bul = ''; render(); });
 $('bulSeg').addEventListener('click', e => { const b = e.target.closest('[data-bul]'); if (!b) return; S.bulanan = Number(b.dataset.bul); S.msg.bul = ''; render(); });
 $('durRange').addEventListener('input', e => { S.durasi = Number(e.target.value); render(); });
+$('mSeg').addEventListener('click', e => { const b = e.target.closest('[data-m]'); if (!b) return; S.margin = Number(b.dataset.m); render(); });
 $('durSeg').addEventListener('click', e => { const b = e.target.closest('[data-dur]'); if (!b) return; S.durasi = Number(b.dataset.dur); render(); });
 $('anakMinus').addEventListener('click', () => { S.anak = Math.max(1, S.anak - 1); render(); });
 $('anakPlus').addEventListener('click', () => { S.anak = Math.min(10, S.anak + 1); render(); });

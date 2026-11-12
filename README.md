@@ -4,7 +4,7 @@ Simulator tabungan untuk enam produk Divisi Funding:
 
 | Produk | Status | Di website publik |
 |---|---|---|
-| Tabungan Pendidikan Anak | Disetujui | Bisa diatur (setoran Rp100.000–Rp5 jt/bulan, 3–12 tahun) |
+| Tabungan Pendidikan Anak | Disetujui | Bisa diatur (setoran Rp100.000–Rp5 jt/bulan, 3–12 tahun, margin 1%–3%) |
 | Tabungan Qurban | Disetujui | Bisa diatur (setoran Rp220.000–Rp2 jt/bulan, lama menabung 3–11 bulan bebas dipilih) |
 | Tabungan Nikah | Disetujui | Bisa diatur (setoran awal min. Rp10 jt, bulanan min. Rp1 jt; wajib surat keterangan menikah dari KUA) |
 | Tabungan Hari Pensiun | Draf | Contoh tetap, terkunci |
