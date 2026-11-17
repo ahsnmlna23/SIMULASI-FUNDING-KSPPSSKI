@@ -160,6 +160,12 @@ input[type="range"]::-moz-range-thumb{width:14px; height:14px; border-radius:50%
 .tk-actions .btn{background:var(--t-hi); border-color:var(--t-hi); color:#08264F}
 .tk-actions .btn.alt{background:transparent; color:var(--t-ink); border-color:var(--t-line)}
 .disclaim{font-size:12px; color:var(--t-muted); padding:0 22px 16px; margin:0}
+.intbanner{background:#C00000; color:#fff; border-radius:12px; padding:11px 14px; font-weight:700; font-size:13.5px; line-height:1.45; margin-bottom:12px}
+.itoggle{display:flex; gap:10px; align-items:flex-start; margin-top:10px; padding:10px 12px; border:1px dashed #C00000; border-radius:10px; font-size:13px; color:#7a0000; cursor:pointer; line-height:1.45}
+.itoggle input{margin-top:3px; accent-color:#C00000}
+.approve{display:flex; flex-direction:column; gap:6px; margin-top:8px; padding:12px; border:1px solid #C00000; border-radius:10px; background:#fff7f7; font-size:13px}
+.approve input{border:1px solid var(--line); border-radius:8px; padding:9px 10px; font:inherit; font-size:14px; width:100%; box-sizing:border-box; background:var(--surface)}
+.approve .row{display:flex; gap:8px; flex-wrap:wrap; margin-top:4px}
 
 .opts{display:flex; flex-direction:column; gap:8px; margin-top:12px}
 .opt-row{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.1fr) minmax(0,1fr) auto; gap:6px 14px; align-items:center; border:1px solid var(--line); border-radius:12px; padding:12px 14px; background:var(--surface); text-align:left; width:100%; cursor:pointer}
@@ -352,6 +358,17 @@ textarea.copybox{width:100%; min-height:200px; border:1px solid var(--line); bor
             <p class="note" id="mNote"></p>
           </div>
           <div class="locks" id="locks"></div>
+          <label class="itoggle" id="intW" hidden><input type="checkbox" id="intChk"><span>Simulasi internal Tabungan Anak. <b>Tidak dipublikasikan ke masyarakat atau nasabah.</b> Perlu persetujuan Credit Risk.</span></label>
+          <form class="approve" id="intApprove" hidden autocomplete="off">
+            <b>Persetujuan Credit Risk</b>
+            <label for="intName">Nama penyetuju (Credit Risk)</label>
+            <input id="intName" maxlength="60" autocomplete="off">
+            <label for="intCode">Kode persetujuan</label>
+            <input id="intCode" type="password" autocomplete="off">
+            <div class="clampmsg" id="intMsg" hidden></div>
+            <div class="row"><button class="btn" type="submit" id="intOk">Setujui &amp; aktifkan</button><button class="btn ghost" type="button" id="intCancel">Batal</button></div>
+            <span class="note">Kode dipegang Credit Risk. Persetujuan berlaku sampai halaman ditutup atau dimuat ulang.</span>
+          </form>
         </div>
 
         <div class="field" id="wMulai">
@@ -362,6 +379,7 @@ textarea.copybox{width:100%; min-height:200px; border:1px solid var(--line); bor
     </section>
 
     <section class="results" aria-live="polite">
+      <div class="intbanner" id="intBanner" hidden></div>
       <article class="ticket" id="ticket">
         <svg class="wm" aria-hidden="true" style="color:#FFFFFF"><use href="#kspps-s-mono"/></svg>
         <div class="tk-main">
@@ -431,7 +449,18 @@ textarea.copybox{width:100%; min-height:200px; border:1px solid var(--line); bor
    status: 'acc' = sudah disetujui · 'draf' = belum diputus komite.
    kunci: true = produk belum resmi; di versi publik pengaturannya terkunci (contoh tetap). */
 const AKSES_PENUH = false;   // true = versi internal (artifact privat) · false = versi publik (GitHub Pages)
-const TERMIN = [2, 1.5, 1.5, 2].map(x => x / 7);   // pola setoran Deposito Proyek: 14 / 10,5 / 10,5 / 14 jt dari 49 jt
+const TERMIN = [2, 1.5, 1.5, 2].map(x => x / 7);
+/* Simulasi internal Tabungan Anak: angka disimpan terenkripsi (AES-GCM, kunci dari kode persetujuan Credit Risk lewat PBKDF2).
+   Tanpa kode, angka tidak bisa dibaca dari halaman ini. Tidak untuk dipublikasikan ke masyarakat atau nasabah. */
+const INTERNAL_ENC = { salt:'Iny9hBc3NJJKbM0ntFF/Sw==', iv:'o0RF9GWqeohqj8zN', ct:'KYxSc2oagGP0Ys6oX+V08lWYiyRzwYlJ+yRhxm/qz9taM08mA34t2Q7GVq4ztXc=', iter:250000 };
+let INTERNAL_TIERS = null;
+async function bukaInternal(kode){
+  const b64 = x => Uint8Array.from(atob(x), ch => ch.charCodeAt(0)), enc = new TextEncoder();
+  const base = await crypto.subtle.importKey('raw', enc.encode(kode), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey({ name:'PBKDF2', salt:b64(INTERNAL_ENC.salt), iterations:INTERNAL_ENC.iter, hash:'SHA-256' }, base, { name:'AES-GCM', length:256 }, false, ['decrypt']);
+  const pt = await crypto.subtle.decrypt({ name:'AES-GCM', iv:b64(INTERNAL_ENC.iv) }, key, b64(INTERNAL_ENC.ct));
+  return JSON.parse(new TextDecoder().decode(pt)).tiers;
+}   // pola setoran Deposito Proyek: 14 / 10,5 / 10,5 / 14 jt dari 49 jt
 const PRODUK = {
   pendidikan: { id:'pendidikan', nama:'Tabungan Pendidikan Anak', pendek:'Pendidikan Anak', status:'acc',
     desc:'Setoran Rp100.000 sampai Rp5 juta per bulan untuk biaya sekolah anak. Nisbah bagi hasil 30:70; makin panjang durasi, makin tinggi bagi hasil per tahun.',
@@ -441,6 +470,7 @@ const PRODUK = {
     dur:{ unit:'tahun', mode:'range', min:3, max:12, def:6, cmp:[3,5,6,8,9,12] },
     tier: y => y <= 5 ? { k:.0695, lab:'3–5 tahun' } : y <= 8 ? { k:.072, lab:'6–8 tahun' } : { k:.0745, lab:'9–12 tahun' },
     tierSeg:[[3,'3–5 th'],[6,'6–8 th'],[9,'9–12 th']],
+    tierInternal: y => { const t = INTERNAL_TIERS; return y <= 5 ? { k:t[0], lab:'3–5 tahun' } : y <= 8 ? { k:t[1], lab:'6–8 tahun' } : { k:t[2], lab:'9–12 tahun' }; },
     syarat:['Setoran <b>Rp100.000–Rp5 jt</b>/bulan', 'Nisbah <b>30:70</b> (nasabah : KSPPS)', 'Bagi hasil <b>6,95%–7,45%/tahun</b> sesuai durasi', 'Berhenti sebelum jatuh tempo: <b>pokok saja</b>'],
     cmp:['durasi','bulanan'], cmpBul:[1e5, 5e5, 1e6, 25e5, 5e6], levers:['bulanan','durasi'], target:20e6, mampu:2e5, mampuLbl:'Kemampuan setor per bulan',
     berhenti:'Pokok saja, tanpa bagi hasil', ahliWaris:true,
@@ -527,6 +557,7 @@ function clean(P, i){
   o.awal = P.awal ? Math.max(o.awal || 0, P.awal.min) : 0;
   o.penempatan = P.pen ? Math.max(o.penempatan || 0, P.pen.min) : 0;
   if (P.dur.mode === 'auto') o.durasi = durasiAuto(P, o);
+  o.internal = !!(P.tierInternal && INTERNAL_TIERS && S.approval && i.internal);
   return o;
 }
 function setoranBulan(P, i, t){
@@ -538,7 +569,7 @@ function build(prod, raw){ const P = PRODUK[prod]; return simulate(P, clean(P, r
 const tahunan = P => P.rate == null;   // true = model nisbah (bagi hasil per tahun)
 function simulate(P, i){
   const N = bulanDari(P, i.durasi);
-  const tier = P.tier ? P.tier(i.durasi) : null;
+  const tier = P.tier ? (i.internal ? P.tierInternal(i.durasi) : P.tier(i.durasi)) : null;
   const k = tier ? tier.k : P.thn != null ? P.thn : null;               // bagi hasil per tahun (efektif)
   const r = k != null ? Math.pow(1 + k, 1 / 12) - 1 : P.rate;            // tarif per bulan
   let bal = 0, pokok = 0; const rows = [];
@@ -550,7 +581,7 @@ function simulate(P, i){
   }
   const nilai = rows.length ? rows[rows.length - 1].saldo : 0;
   const margin = nilai - pokok;
-  return { P, i, N, k, r, tier, rows, pokok, nilai, margin, rateLab: k != null ? `${pc2(k)}/tahun` : `${pc(P.rate)}/bulan` };
+  return { P, i, N, k, r, tier, rows, pokok, nilai, margin, internal: !!i.internal, rateLab: k != null ? `${pc2(k)}/tahun` : `${pc(P.rate)}/bulan` };
 }
 
 /* ===== Format ===== */
@@ -571,15 +602,15 @@ const $ = id => document.getElementById(id);
 const now = new Date();
 const S = { prod:'pendidikan', durasi:6, anak:1, bulanan:1e5, awal:0, penempatan:0, margin:null,
   mulai: now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0'),
-  cmp:'durasi', detail:false, msg:{}, fit:{} };
+  cmp:'durasi', detail:false, msg:{}, fit:{}, internal:false, approval:null };
 ORDER.forEach(id => { S.fit[id] = { target: PRODUK[id].target, mampu: PRODUK[id].mampu }; });
 function applyProduk(id){
   const P = PRODUK[id]; S.prod = id;
   S.durasi = P.dur.def; S.anak = 1;
   S.bulanan = P.bul ? P.bul.def : 0; S.awal = P.awal ? P.awal.def : 0; S.penempatan = P.pen ? P.pen.def : 0;
-  S.cmp = P.cmp[0]; S.msg = {}; S.margin = null;
+  S.cmp = P.cmp[0]; S.msg = {}; S.margin = null; S.internal = false;
 }
-const inp = (o = {}) => ({ durasi:S.durasi, anak:S.anak, bulanan:S.bulanan, awal:S.awal, penempatan:S.penempatan, margin:S.margin, ...o });
+const inp = (o = {}) => ({ durasi:S.durasi, anak:S.anak, bulanan:S.bulanan, awal:S.awal, penempatan:S.penempatan, margin:S.margin, internal:S.internal, ...o });
 
 const ICON = {
   coin:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5" fill="currentColor"/></svg>',
@@ -661,7 +692,8 @@ function renderControls(c){
   $('durRangeW').hidden = D.mode !== 'range';
   if (D.mode === 'range'){ setRange($('durRange'), i.durasi, D.min, D.max, 1); $('durMinLbl').textContent = `${D.min} ${D.unit === 'tahun' ? 'th' : 'bln'}`; $('durMaxLbl').textContent = `${D.max} ${D.unit === 'tahun' ? 'th' : 'bln'}`; }
   let seg = '';
-  if (P.tierSeg) seg = P.tierSeg.map(([y, l]) => `<button type="button" data-dur="${y}" aria-pressed="${P.tier(y).k === c.k}">${l}<small>${pc2(P.tier(y).k)}/thn</small></button>`).join('');
+  const TF = c.internal ? P.tierInternal : P.tier;
+  if (P.tierSeg) seg = P.tierSeg.map(([y, l]) => `<button type="button" data-dur="${y}" aria-pressed="${TF(y).k === c.k}">${l}<small>${pc2(TF(y).k)}/thn</small></button>`).join('');
   else if (D.mode === 'seg') seg = D.opts.map(d => `<button type="button" data-dur="${d}" aria-pressed="${d === i.durasi}">${d} bulan</button>`).join('');
   $('durSeg').hidden = !seg; $('durSeg').innerHTML = seg;
   if (D.mode === 'auto'){
@@ -672,6 +704,8 @@ function renderControls(c){
     : `Setoran ${mlab(S.mulai, 0)} – ${mlab(S.mulai, c.N - 1)}. Jatuh tempo <b>${mlab(S.mulai, c.N - 1)}</b>.`;
 
   $('mSegW').hidden = true;
+  $('intW').hidden = !(P.tierInternal && !L); $('intChk').checked = !!c.internal;
+  if ($('intW').hidden) $('intApprove').hidden = true;
   const rateTxt = tahunan(P) ? `${pc2(c.k)} per tahun` : `${pc(P.rate)} per bulan`;
   const rateSub = tahunan(P) ? `estimasi${c.tier ? ` tingkat ${c.tier.lab}` : ''} · nisbah 30:70 · dihitung dari saldo tiap bulan${P.ms > 1 ? `, mulai bulan ke-${P.ms}` : ''}` : `dihitung dari saldo, mulai bulan ke-${P.ms}`;
   $('locks').innerHTML = `<div class="lock-item"><span class="k">${ICON.lock} ${tahunan(P) ? 'Bagi hasil' : 'Tingkat margin'}</span><span class="v">${rateTxt}</span><span class="s">${rateSub}</span></div>
@@ -693,9 +727,12 @@ function extras(c){
 function renderTicket(c){
   const P = c.P, i = c.i, ym = S.mulai;
   $('tkProg').textContent = `${P.nama} · ${durLab(P, i.durasi)}` + (i.anak > 1 ? ` · ${i.anak} anak` : '');
-  $('tkTag').textContent = P.status === 'draf' ? 'Draf · menunggu komite' : P.tag;
-  $('tkTag').classList.toggle('draf', P.status === 'draf');
-  $('tkActions').hidden = terkunci(P); if (terkunci(P)) $('copyBox').hidden = true;
+  $('tkTag').textContent = c.internal ? 'Internal · tidak untuk nasabah' : P.status === 'draf' ? 'Draf · menunggu komite' : P.tag;
+  $('tkTag').classList.toggle('draf', P.status === 'draf' || c.internal);
+  $('intBanner').hidden = !c.internal;
+  if (c.internal){ const t = INTERNAL_TIERS;
+    $('intBanner').textContent = `SIMULASI INTERNAL — disetujui Credit Risk: ${S.approval.nama} · ${S.approval.waktu}. Margin ${pc2(t[0])} / ${pc2(t[1])} / ${pc2(t[2])} melanggar batas bagi hasil 9% per tahun (Permenkop UKM 8/2023 Pasal 26 ayat 4). Angka ini TIDAK dipublikasikan ke masyarakat atau nasabah dan tidak boleh dikirim ke calon nasabah.`; }
+  $('tkActions').hidden = terkunci(P) || c.internal; if (terkunci(P) || c.internal) $('copyBox').hidden = true;
   $('tkHero').innerHTML = `<span class="lab">${P.pola === 'termin' ? 'Modal + keuntungan cair' : 'Nilai akhir saat jatuh tempo'}</span>
     <span class="val">${rp(c.nilai)}</span>
     <span class="then">dari ${P.pola === 'termin' ? 'penempatan' : 'total setoran'} ${rp(c.pokok)}${i.anak > 1 ? ` · ${rp(c.nilai / i.anak)} per anak` : ''}</span>`;
@@ -713,10 +750,17 @@ function renderTicket(c){
     [P.pola === 'termin' ? 'Total penempatan' : 'Total setoran', rp(c.pokok)],
     [tahunan(P) ? 'Total bagi hasil' : 'Total margin', rp(c.margin)],
     ['Nilai akhir', rp(c.nilai)],
+    ...(c.internal ? (() => { const pat = build(P.id, inp({ internal:false })); return [
+      ['Status', c.k > .09 ? 'Melanggar batas 9% per tahun' : 'Di bawah 9% per tahun'],
+      ['Versi patuh (yang dipublikasikan)', `${rp(pat.nilai)} · ${pc2(pat.k)}/tahun`],
+      ['Selisih yang ditanggung KSPPS', rp(c.nilai - pat.nilai)],
+      ['Disetujui Credit Risk', `${S.approval.nama} · ${S.approval.waktu}`]]; })() : []),
     ...extras(c)
   ];
   $('tkStub').innerHTML = stub.map(([k, v]) => `<div><span class="k">${k}</span><span class="v">${v}</span></div>`).join('');
-  $('disclaim').textContent = terkunci(P)
+  $('disclaim').textContent = c.internal
+    ? 'Simulasi internal atas persetujuan Credit Risk. Margin ini tidak dipublikasikan ke masyarakat atau nasabah, tidak dicantumkan di akad, dan tombol WhatsApp dinonaktifkan.'
+    : terkunci(P)
     ? 'Contoh simulasi untuk produk yang masih dikaji Credit Risk. Angka dapat berubah dan belum bisa disesuaikan di halaman ini.'
     : P.status === 'draf'
     ? 'Simulasi dari hitungan Credit Risk. Produk ini belum diputus komite, sehingga angka dapat berubah. Nilai final mengikuti akad.'
@@ -758,6 +802,7 @@ const WA = {
 };
 const rpw = n => 'Rp' + nf.format(Math.round(n));
 function waText(c){
+  if (c.internal) return '';
   const P = c.P, i = c.i, ym = S.mulai, W = WA[P.id], L = [];
   const sv = P.pola === 'termin' ? 'penempatan' : 'setoran', dur = durLab(P, i.durasi);
   L.push(`*${P.nama.toUpperCase()}*`, 'KSPPS Syirkah Kebaikan Indonesia', '', W.pitch, '', '*Ketentuan*', ...W.ket.map(k => '• ' + k), '');
@@ -787,7 +832,7 @@ function renderCompare(c){
   const mode = S.cmp; let set, cur, mk, lab, sub;
   if (mode === 'durasi'){
     cur = c.i.durasi; set = [...P.dur.cmp]; mk = v => build(P.id, inp({ durasi:v }));
-    lab = v => `${durLab(P, v)}${P.tier ? ` · ${pc2(P.tier(v).k)}/thn` : ''}`;
+    lab = v => `${durLab(P, v)}${P.tier ? ` · ${pc2((c.internal ? P.tierInternal : P.tier)(v).k)}/thn` : ''}`;
     sub = `Setoran sama, durasi berbeda. ${P.tier ? `Bagi hasil per tahun naik di ${P.tierSeg.slice(1).map(x => x[1].split('–')[0]).join(' dan ')} tahun. ` : ''}Ketuk salah satu untuk memakainya.`;
   } else if (mode === 'bulanan'){
     cur = c.i.bulanan; set = [...P.cmpBul]; mk = v => build(P.id, inp({ bulanan:v }));
@@ -964,7 +1009,7 @@ function render(){
   const c = build(S.prod, inp()); lastC = c;
   S.durasi = c.i.durasi; S.anak = c.i.anak;
   $('fenceTxt').innerHTML = `<span><b>${c.P.nama}</b></span>` + c.P.syarat.map(s => `<span>${s}</span>`).join('');
-  $('dock').innerHTML = `<span><span class="k">Nilai akhir · ${mlab(S.mulai, c.N - 1)}</span><span class="v">${rp(c.nilai)}</span></span><span class="r">${c.P.pendek}<span>setoran ${rpS(c.pokok)}</span></span>`;
+  $('dock').innerHTML = `<span><span class="k">Nilai akhir · ${mlab(S.mulai, c.N - 1)}</span><span class="v">${rp(c.nilai)}</span></span><span class="r">${c.P.pendek}${c.internal ? ' · internal' : ''}<span>setoran ${rpS(c.pokok)}</span></span>`;
   const L = terkunci(c.P);
   $('internalBadge').hidden = !AKSES_PENUH;
   $('secCmp').hidden = L;
@@ -997,6 +1042,24 @@ moneyInput('fMampu', v => { S.fit[S.prod].mampu = v; }, () => S.fit[S.prod].mamp
 $('bulRange').addEventListener('input', e => { S.bulanan = Number(e.target.value); S.msg.bul = ''; render(); });
 $('bulSeg').addEventListener('click', e => { const b = e.target.closest('[data-bul]'); if (!b) return; S.bulanan = Number(b.dataset.bul); S.msg.bul = ''; render(); });
 $('durRange').addEventListener('input', e => { S.durasi = Number(e.target.value); render(); });
+$('intChk').addEventListener('change', e => {
+  if (e.target.checked && !S.approval){ e.target.checked = false; $('intApprove').hidden = false; $('intMsg').hidden = true; $('intName').focus(); return; }
+  S.internal = e.target.checked; render();
+  toast(S.internal ? 'Simulasi internal aktif · tidak untuk nasabah' : 'Kembali ke margin yang dipublikasikan');
+});
+$('intCancel').addEventListener('click', () => { $('intApprove').hidden = true; $('intCode').value = ''; });
+$('intApprove').addEventListener('submit', async e => {
+  e.preventDefault();
+  const nama = $('intName').value.trim(), kode = $('intCode').value.trim(), msg = $('intMsg');
+  if (!nama || !kode){ msg.hidden = false; msg.textContent = 'Isi nama penyetuju dan kode persetujuan.'; return; }
+  try {
+    INTERNAL_TIERS = await bukaInternal(kode);
+    const d = new Date();
+    S.approval = { nama, waktu: d.toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' }) + ' ' + d.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' }) };
+    S.internal = true; $('intApprove').hidden = true; $('intCode').value = ''; render();
+    toast('Disetujui Credit Risk · simulasi internal aktif');
+  } catch(err){ msg.hidden = false; msg.textContent = window.crypto && crypto.subtle ? 'Kode persetujuan salah.' : 'Browser ini tidak mendukung pembuka kode. Buka halaman lewat https.'; }
+});
 $('mSeg').addEventListener('click', e => { const b = e.target.closest('[data-m]'); if (!b) return; S.margin = Number(b.dataset.m); render(); });
 $('durSeg').addEventListener('click', e => { const b = e.target.closest('[data-dur]'); if (!b) return; S.durasi = Number(b.dataset.dur); render(); });
 $('anakMinus').addEventListener('click', () => { S.anak = Math.max(1, S.anak - 1); render(); });
