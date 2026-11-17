@@ -345,7 +345,7 @@ textarea.copybox{width:100%; min-height:200px; border:1px solid var(--line); bor
         </div>
 
         <div class="field">
-          <div class="lbl"><span>Margin</span><span class="hint">mengikuti hitungan Credit Risk</span></div>
+          <div class="lbl"><span>Bagi hasil</span><span class="hint">mengikuti hitungan Credit Risk</span></div>
           <div class="field" id="mSegW" hidden>
             <div class="lbl"><span>Pilih margin</span><span class="big-val" id="mVal"></span></div>
             <div class="seg" id="mSeg" role="group" aria-label="Pilih margin"></div>
@@ -423,52 +423,56 @@ textarea.copybox{width:100%; min-height:200px; border:1px solid var(--line); bor
 <div class="toast" id="toast" role="status"></div>
 
 <script>
-/* ===== Data produk: angka dan rumus dari file CR – Funding (Credit Risk) =====
-   Rumus semua sheet: margin bulan t = tarif × (setoran bulan t + saldo bulan t−1), mulai bulan ke-`ms`.
-   Pendidikan Anak: tingkat 2% dan 3% = 2× dan 3× margin dasar 1% (sesuai Surat Komite 001/KOMITE-FUND/KSPPS/XI/2026).
+/* ===== Data produk: angka dan rumus dari file CREDIT RISK – FUNDING TABUNGAN (sheet BATAS NISBAH & MARGIN, skenario dasar) =====
+   Nisbah bagi hasil 30:70 (nasabah : KSPPS) untuk semua tabungan.
+   Bagi hasil bulan t = r × (setoran bulan t + saldo bulan t−1), mulai bulan ke-`ms`, dengan r = (1 + bagi hasil per tahun)^(1/12) − 1.
+   Pendidikan Anak: 6,95% / 7,20% / 7,45% per tahun untuk 3–5 / 6–8 / 9–12 tahun. Qurban 6,10%. Nikah 8,40%. Pensiun 4,99% / 5,31% / 5,63%.
+   DP Rumah dan Deposito Proyek belum masuk model nisbah: masih memakai tarif per bulan lama (`rate`).
    status: 'acc' = sudah disetujui · 'draf' = belum diputus komite.
    kunci: true = produk belum resmi; di versi publik pengaturannya terkunci (contoh tetap). */
 const AKSES_PENUH = false;   // true = versi internal (artifact privat) · false = versi publik (GitHub Pages)
 const TERMIN = [2, 1.5, 1.5, 2].map(x => x / 7);   // pola setoran Deposito Proyek: 14 / 10,5 / 10,5 / 14 jt dari 49 jt
 const PRODUK = {
   pendidikan: { id:'pendidikan', nama:'Tabungan Pendidikan Anak', pendek:'Pendidikan Anak', status:'acc',
-    desc:'Setoran Rp100.000 sampai Rp5 juta per bulan untuk biaya sekolah anak. Makin panjang durasi, makin tinggi tingkat margin.',
-    rail:'Rp100rb–5jt/bln · 3–12 th · margin 1–3%',
-    rate:.01, ms:1, pola:'bulanan',
+    desc:'Setoran Rp100.000 sampai Rp5 juta per bulan untuk biaya sekolah anak. Nisbah bagi hasil 30:70; makin panjang durasi, makin tinggi bagi hasil per tahun.',
+    rail:'Rp100rb–5jt/bln · 3–12 th · nisbah 30:70',
+    ms:1, pola:'bulanan',
     bul:{ mode:'range', min:1e5, max:5e6, def:1e5, step:5e4 }, anak:true,
     dur:{ unit:'tahun', mode:'range', min:3, max:12, def:6, cmp:[3,5,6,8,9,12] },
-    tier: y => y <= 5 ? { k:1, lab:'3–5 tahun' } : y <= 8 ? { k:2, lab:'6–8 tahun' } : { k:3, lab:'9–12 tahun' },
-    syarat:['Setoran <b>Rp100.000–Rp5 jt</b>/bulan', 'Margin <b>1%–3%</b>, standar mengikuti durasi', 'Berhenti sebelum jatuh tempo: <b>pokok saja</b>'],
-    marginAdj:{ min:1, max:3, opts:[1, 1.5, 2, 2.5, 3] },
+    tier: y => y <= 5 ? { k:.0695, lab:'3–5 tahun' } : y <= 8 ? { k:.072, lab:'6–8 tahun' } : { k:.0745, lab:'9–12 tahun' },
+    tierSeg:[[3,'3–5 th'],[6,'6–8 th'],[9,'9–12 th']],
+    syarat:['Setoran <b>Rp100.000–Rp5 jt</b>/bulan', 'Nisbah <b>30:70</b> (nasabah : KSPPS)', 'Bagi hasil <b>6,95%–7,45%/tahun</b> sesuai durasi', 'Berhenti sebelum jatuh tempo: <b>pokok saja</b>'],
     cmp:['durasi','bulanan'], cmpBul:[1e5, 5e5, 1e6, 25e5, 5e6], levers:['bulanan','durasi'], target:20e6, mampu:2e5, mampuLbl:'Kemampuan setor per bulan',
-    berhenti:'Pokok saja, tanpa margin', ahliWaris:true,
-    tag:'Nilai margin total tercantum di akad' },
+    berhenti:'Pokok saja, tanpa bagi hasil', ahliWaris:true,
+    tag:'Nisbah 30:70 tercantum di akad' },
   qurban: { id:'qurban', nama:'Tabungan Qurban', pendek:'Qurban', status:'acc',
     desc:'Menabung untuk hewan qurban. Setoran Rp220.000 sampai Rp2 juta per bulan, lama menabung bebas dipilih 3 sampai 11 bulan. Tujuh penabung bisa patungan satu ekor sapi.',
     rail:'Rp220rb–2jt/bln · 3–11 bulan',
-    rate:.01, ms:2, pola:'bulanan',
+    thn:.061, ms:2, pola:'bulanan',
     bul:{ mode:'range', min:22e4, max:2e6, def:22e4, presets:[22e4, 5e5, 1e6, 2e6], step:1e4 },
     dur:{ unit:'bulan', mode:'range', min:3, max:11, def:11, cmp:[3,6,9,11] },
-    syarat:['Setoran <b>Rp220.000–Rp2 jt</b>/bulan', 'Lama menabung <b>3–11 bulan</b>, bebas dipilih', 'Margin <b>1%/bulan</b> mulai bulan ke-2'],
+    syarat:['Setoran <b>Rp220.000–Rp2 jt</b>/bulan', 'Lama menabung <b>3–11 bulan</b>, bebas dipilih', 'Nisbah <b>30:70</b>, bagi hasil <b>6,10%/tahun</b> mulai bulan ke-2'],
     cmp:['durasi','bulanan'], cmpBul:[22e4, 5e5, 1e6, 2e6], levers:['bulanan','durasi'], target:3e6, mampu:5e5, mampuLbl:'Kemampuan setor per bulan',
     tag:'Jatuh tempo menjelang qurban' },
   pensiun: { id:'pensiun', nama:'Tabungan Hari Pensiun', pendek:'Pensiun', status:'draf', kunci:true,
-    desc:'Setoran rutin jangka panjang untuk dana hari tua. Durasi minimal 15 tahun.',
-    rail:'Rp150–500rb/bln · min. 15 th',
-    rate:.02, ms:2, pola:'bulanan',
+    desc:'Setoran rutin jangka panjang untuk dana hari tua. Lama menabung 1 sampai 15 tahun; makin lama, makin tinggi bagi hasil per tahun.',
+    rail:'Rp150–500rb/bln · 1–15 th',
+    ms:2, pola:'bulanan',
+    tier: y => y <= 5 ? { k:.04989631873, lab:'1–5 tahun' } : y <= 10 ? { k:.05308934612, lab:'6–10 tahun' } : { k:.0562912729, lab:'11–15 tahun' },
+    tierSeg:[[5,'1–5 th'],[10,'6–10 th'],[15,'11–15 th']],
     bul:{ mode:'range', min:15e4, max:5e5, def:5e5, step:1e4 },
-    dur:{ unit:'tahun', mode:'range', min:15, max:25, def:15, cmp:[15,18,20,25] },
-    syarat:['Setoran <b>Rp150.000–Rp500.000</b>/bulan', 'Durasi <b>min. 15 tahun</b>', 'Margin <b>2%/bulan</b> mulai bulan ke-2'],
+    dur:{ unit:'tahun', mode:'range', min:1, max:15, def:15, cmp:[5,10,15] },
+    syarat:['Setoran <b>Rp150.000–Rp500.000</b>/bulan', 'Lama menabung <b>1–15 tahun</b>', 'Nisbah <b>30:70</b>, bagi hasil <b>4,99%–5,63%/tahun</b> mulai bulan ke-2'],
     cmp:['durasi','bulanan'], cmpBul:[15e4, 25e4, 35e4, 5e5], levers:['bulanan','durasi'], target:5e8, mampu:3e5, mampuLbl:'Kemampuan setor per bulan',
     tag:'Setoran rutin jangka panjang' },
   nikah: { id:'nikah', nama:'Tabungan Nikah', pendek:'Nikah', status:'acc',
     desc:'Setoran awal lalu setoran bulanan untuk biaya pernikahan. Nilai akhir dikunci saat akad. Wajib melampirkan surat keterangan menikah dari KUA.',
     dokumen:'Surat keterangan menikah dari KUA',
     rail:'Awal min. 10 jt · min. 1 jt/bln',
-    rate:.01, ms:2, pola:'awal',
+    thn:.084, ms:2, pola:'awal',
     awal:{ min:1e7, def:1e7 }, bul:{ mode:'money', min:1e6, def:1e6, step:1e5 },
     dur:{ unit:'tahun', mode:'range', min:1, max:10, def:10, cmp:[3,5,7,10] },
-    syarat:['Setoran awal <b>min. Rp10 jt</b>', 'Setoran bulanan <b>min. Rp1 jt</b>', 'Nilai akhir <b>dikunci di akad</b>', 'Wajib <b>surat keterangan menikah dari KUA</b>'],
+    syarat:['Setoran awal <b>min. Rp10 jt</b>', 'Setoran bulanan <b>min. Rp1 jt</b>', 'Nisbah <b>30:70</b>, bagi hasil <b>8,40%/tahun</b> mulai bulan ke-2', 'Nilai akhir <b>dikunci di akad</b>', 'Wajib <b>surat keterangan menikah dari KUA</b>'],
     cmp:['durasi','bulanan'], cmpBul:[1e6, 15e5, 2e6, 3e6], levers:['bulanan','durasi'], target:15e7, mampu:15e5, mampuLbl:'Kemampuan setor per bulan',
     tag:'Nilai akhir dikunci di akad' },
   dprumah: { id:'dprumah', nama:'Tabungan DP Rumah', pendek:'DP Rumany & Rumsy', status:'draf', kunci:true,
@@ -523,7 +527,6 @@ function clean(P, i){
   o.awal = P.awal ? Math.max(o.awal || 0, P.awal.min) : 0;
   o.penempatan = P.pen ? Math.max(o.penempatan || 0, P.pen.min) : 0;
   if (P.dur.mode === 'auto') o.durasi = durasiAuto(P, o);
-  if (P.marginAdj) o.margin = o.margin != null ? clamp(o.margin, P.marginAdj.min, P.marginAdj.max) : P.tier(o.durasi).k;
   return o;
 }
 function setoranBulan(P, i, t){
@@ -532,19 +535,22 @@ function setoranBulan(P, i, t){
   return i.bulanan * i.anak;
 }
 function build(prod, raw){ const P = PRODUK[prod]; return simulate(P, clean(P, raw)); }
+const tahunan = P => P.rate == null;   // true = model nisbah (bagi hasil per tahun)
 function simulate(P, i){
   const N = bulanDari(P, i.durasi);
-  const tier = P.tier ? P.tier(i.durasi) : null, k = P.marginAdj ? i.margin : tier ? tier.k : 1;
+  const tier = P.tier ? P.tier(i.durasi) : null;
+  const k = tier ? tier.k : P.thn != null ? P.thn : null;               // bagi hasil per tahun (efektif)
+  const r = k != null ? Math.pow(1 + k, 1 / 12) - 1 : P.rate;            // tarif per bulan
   let bal = 0, pokok = 0; const rows = [];
   for (let t = 1; t <= N; t++){
     const d = setoranBulan(P, i, t);
-    const m = t >= P.ms ? P.rate * (d + bal) : 0;   // margin dasar
+    const m = t >= P.ms ? r * (d + bal) : 0;
     bal += d + m; pokok += d;
-    rows.push({ t, d, m: m * k, pokok, saldo: pokok + k * (bal - pokok) });
+    rows.push({ t, d, m, pokok, saldo: bal });
   }
   const nilai = rows.length ? rows[rows.length - 1].saldo : 0;
   const margin = nilai - pokok;
-  return { P, i, N, k, tier, rows, pokok, nilai, margin, rateLab: tier ? pcn(k) : pc(P.rate), std: tier ? tier.k : null };
+  return { P, i, N, k, r, tier, rows, pokok, nilai, margin, rateLab: k != null ? `${pc2(k)}/tahun` : `${pc(P.rate)}/bulan` };
 }
 
 /* ===== Format ===== */
@@ -552,6 +558,7 @@ const nf = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 });
 const rp = n => (n < -0.5 ? '−' : '') + 'Rp ' + nf.format(Math.abs(Math.round(n)));
 const rpS = n => { const a = Math.abs(n), s = n < -0.5 ? '−' : ''; if (a >= 1e9) return s + 'Rp ' + (a/1e9).toLocaleString('id-ID', {maximumFractionDigits:2}) + ' M'; if (a >= 1e6) return s + 'Rp ' + (a/1e6).toLocaleString('id-ID', {maximumFractionDigits:2}) + ' jt'; if (a >= 1e3) return s + 'Rp ' + (a/1e3).toLocaleString('id-ID', {maximumFractionDigits:0}) + ' rb'; return rp(n); };
 function pc(x, d = 0){ return (x * 100).toLocaleString('id-ID', { maximumFractionDigits: d }) + '%'; }
+const pc2 = x => (x * 100).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
 const pcn = v => v.toLocaleString('id-ID', { maximumFractionDigits: 2 }) + '%';
 const parseRp = s => { const d = String(s).replace(/[^\d]/g, ''); return d ? Number(d) : 0; };
 const BLN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
@@ -654,7 +661,7 @@ function renderControls(c){
   $('durRangeW').hidden = D.mode !== 'range';
   if (D.mode === 'range'){ setRange($('durRange'), i.durasi, D.min, D.max, 1); $('durMinLbl').textContent = `${D.min} ${D.unit === 'tahun' ? 'th' : 'bln'}`; $('durMaxLbl').textContent = `${D.max} ${D.unit === 'tahun' ? 'th' : 'bln'}`; }
   let seg = '';
-  if (P.tier && !P.marginAdj) seg = [[3,'3–5 th','1%'],[6,'6–8 th','2%'],[9,'9–12 th','3%']].map(([y, l, m]) => `<button type="button" data-dur="${y}" aria-pressed="${P.tier(y).k === c.k}">${l}<small>margin ${m}</small></button>`).join('');
+  if (P.tierSeg) seg = P.tierSeg.map(([y, l]) => `<button type="button" data-dur="${y}" aria-pressed="${P.tier(y).k === c.k}">${l}<small>${pc2(P.tier(y).k)}/thn</small></button>`).join('');
   else if (D.mode === 'seg') seg = D.opts.map(d => `<button type="button" data-dur="${d}" aria-pressed="${d === i.durasi}">${d} bulan</button>`).join('');
   $('durSeg').hidden = !seg; $('durSeg').innerHTML = seg;
   if (D.mode === 'auto'){
@@ -664,16 +671,11 @@ function renderControls(c){
     ? `Durasi tetap ${durLab(P, D.def)}. Jatuh tempo <b>${mlab(S.mulai, c.N - 1)}</b>.`
     : `Setoran ${mlab(S.mulai, 0)} – ${mlab(S.mulai, c.N - 1)}. Jatuh tempo <b>${mlab(S.mulai, c.N - 1)}</b>.`;
 
-  $('mSegW').hidden = !P.marginAdj || L;
-  if (P.marginAdj){
-    $('mVal').innerHTML = `${pcn(c.k)}<small>${Math.abs(c.k - c.std) < 1e-9 ? 'standar' : 'pilihan'}</small>`;
-    $('mSeg').innerHTML = P.marginAdj.opts.map(v => `<button type="button" data-m="${v}" aria-pressed="${Math.abs(c.k - v) < 1e-9}" class="${Math.abs(c.std - v) < 1e-9 ? 'std' : ''}">${pcn(v)}</button>`).join('');
-    $('mNote').innerHTML = `Titik biru = margin standar untuk durasi ${c.tier.lab} (${pcn(c.std)}). ${c.k === 1 ? 'Margin 1% dihitung dari saldo setiap bulan.' : `Margin ${pcn(c.k)} dihitung ${pcn(c.k).replace('%', '')}× margin dasar 1% per bulan dari saldo.`}`;
-  }
-  const rateTxt = P.tier ? `${pcn(c.k)}` : `${pc(P.rate)} per bulan`;
-  const rateSub = P.tier ? `tingkat ${c.tier.lab} · ${c.k > 1 ? `${pcn(c.k).replace('%', '')}× margin dasar 1%/bulan` : 'dihitung dari saldo tiap bulan'}` : `dihitung dari saldo, mulai bulan ke-${P.ms}`;
-  $('locks').innerHTML = (P.marginAdj && !L ? '' : `<div class="lock-item"><span class="k">${ICON.lock} Tingkat margin</span><span class="v">${rateTxt}</span><span class="s">${rateSub}</span></div>`) + `
-    <div class="lock-item"><span class="k">${ICON.lock} Total margin</span><span class="v">${rp(c.margin)}</span><span class="s">${pc(c.margin / c.pokok, 1)} dari total setoran</span></div>`;
+  $('mSegW').hidden = true;
+  const rateTxt = tahunan(P) ? `${pc2(c.k)} per tahun` : `${pc(P.rate)} per bulan`;
+  const rateSub = tahunan(P) ? `estimasi${c.tier ? ` tingkat ${c.tier.lab}` : ''} · nisbah 30:70 · dihitung dari saldo tiap bulan${P.ms > 1 ? `, mulai bulan ke-${P.ms}` : ''}` : `dihitung dari saldo, mulai bulan ke-${P.ms}`;
+  $('locks').innerHTML = `<div class="lock-item"><span class="k">${ICON.lock} ${tahunan(P) ? 'Bagi hasil' : 'Tingkat margin'}</span><span class="v">${rateTxt}</span><span class="s">${rateSub}</span></div>
+    <div class="lock-item"><span class="k">${ICON.lock} Total ${tahunan(P) ? 'bagi hasil' : 'margin'}</span><span class="v">${rp(c.margin)}</span><span class="s">${pc(c.margin / c.pokok, 1)} dari total setoran</span></div>`;
   $('mulai').value = S.mulai;
 }
 
@@ -701,14 +703,15 @@ function renderTicket(c){
   const setoranSub = P.pola === 'termin' ? '4 termin, bulan 1–4' : P.pola === 'awal' ? (i.bulanan > 0 ? `awal, lalu ${rpS(i.bulanan)}/bln` : 'setoran awal, sekali') : `per bulan × ${c.N}`;
   $('tkTrio').innerHTML = `
     <div><span class="k">${P.pola === 'termin' ? 'Penempatan' : P.pola === 'awal' ? 'Setoran awal' : 'Setoran'}</span><span class="v">${setoranTxt}</span><span class="s">${setoranSub}</span></div>
-    <div><span class="k">Total margin</span><span class="v">${rp(c.margin)}</span><span class="s">tingkat ${c.rateLab}${P.tier ? '' : '/bulan'} · +${pc(c.margin / c.pokok, 1)}</span></div>
+    <div><span class="k">Total ${tahunan(P) ? 'bagi hasil' : 'margin'}</span><span class="v">${rp(c.margin)}</span><span class="s">${tahunan(P) ? 'estimasi ' : 'tingkat '}${c.rateLab} · +${pc(c.margin / c.pokok, 1)}</span></div>
     <div><span class="k">Jatuh tempo</span><span class="v">${mlab(ym, c.N - 1)}</span><span class="s">bulan ke-${c.N} dari mulai menabung</span></div>`;
   const stub = [
     [P.pola === 'termin' ? 'Mulai penempatan' : 'Mulai menabung', mlab(ym, 0)],
     [P.pola === 'termin' ? 'Lama penempatan' : 'Lama menabung', `${c.N} bulan`],
-    ['Tingkat margin', P.tier ? `${pcn(c.k)}${P.marginAdj ? (Math.abs(c.k - c.std) < 1e-9 ? ' (standar)' : ` (standar ${pcn(c.std)})`) : ` (${c.tier.lab})`}` : `${pc(P.rate)}/bulan, mulai bulan ke-${P.ms}`],
+    ...(tahunan(P) ? [['Nisbah bagi hasil', '30 : 70 (nasabah : KSPPS)'], ['Estimasi bagi hasil', `${pc2(c.k)} per tahun${c.tier ? ` (${c.tier.lab})` : ''}, mulai bulan ke-${P.ms}`]]
+      : [['Tingkat margin', `${pc(P.rate)}/bulan, mulai bulan ke-${P.ms}`]]),
     [P.pola === 'termin' ? 'Total penempatan' : 'Total setoran', rp(c.pokok)],
-    ['Total margin', rp(c.margin)],
+    [tahunan(P) ? 'Total bagi hasil' : 'Total margin', rp(c.margin)],
     ['Nilai akhir', rp(c.nilai)],
     ...extras(c)
   ];
@@ -717,32 +720,32 @@ function renderTicket(c){
     ? 'Contoh simulasi untuk produk yang masih dikaji Credit Risk. Angka dapat berubah dan belum bisa disesuaikan di halaman ini.'
     : P.status === 'draf'
     ? 'Simulasi dari hitungan Credit Risk. Produk ini belum diputus komite, sehingga angka dapat berubah. Nilai final mengikuti akad.'
-    : 'Simulasi, belum mengikat. Nilai margin total dicantumkan di akad.';
+    : 'Simulasi, belum mengikat. Akad memakai nisbah 30:70; bagi hasil per tahun adalah estimasi, bukan jaminan.';
 }
 /* ===== Teks WhatsApp untuk calon nasabah (angka mengikuti simulasi yang dipilih) ===== */
 const WA = {
   pendidikan: { pitch:'Siapkan biaya sekolah anak sejak sekarang dengan menabung rutin setiap bulan.', ket:[
     'Setoran Rp100.000 – Rp5.000.000 per bulan, jumlahnya sama setiap bulan',
     '1 rekening untuk 1 anak',
-    'Tambahan dana (margin) dihitung setiap bulan dari saldo tabungan',
-    'Nilai tambahan dana dicantumkan di akad sejak awal',
+    'Bagi hasil dihitung setiap bulan dari saldo tabungan dengan nisbah 30:70 (nasabah : KSPPS)',
+    'Makin lama menabung, makin tinggi bagi hasil per tahun',
     'Bila berhenti sebelum jatuh tempo, yang dicairkan hanya setoran pokok',
     'Bila terjadi force majeure, hak tabungan dialihkan kepada ahli waris yang tercantum di akad'] },
   qurban: { pitch:'Siapkan dana qurban dengan menabung rutin setiap bulan.', ket:[
     'Setoran Rp220.000 – Rp2.000.000 per bulan',
     'Lama menabung 3 – 11 bulan, bebas dipilih',
-    'Tambahan dana (margin) dihitung setiap bulan dari saldo tabungan, mulai bulan ke-2',
+    'Bagi hasil dihitung setiap bulan dari saldo tabungan dengan nisbah 30:70 (nasabah : KSPPS), mulai bulan ke-2',
     'Tujuh penabung bisa patungan untuk satu ekor sapi'] },
   nikah: { pitch:'Siapkan biaya pernikahan dengan setoran awal dan setoran rutin setiap bulan.', ket:[
     'Setoran awal minimal Rp10.000.000',
     'Setoran bulanan minimal Rp1.000.000',
-    'Tambahan dana (margin) dihitung setiap bulan dari saldo tabungan, mulai bulan ke-2',
+    'Bagi hasil dihitung setiap bulan dari saldo tabungan dengan nisbah 30:70 (nasabah : KSPPS), mulai bulan ke-2',
     'Nilai akhir dikunci di akad',
     'Wajib melampirkan surat keterangan menikah dari KUA'] },
   pensiun: { pitch:'Siapkan dana hari tua dengan setoran rutin jangka panjang.', ket:[
     'Setoran Rp150.000 – Rp500.000 per bulan',
-    'Durasi minimal 15 tahun',
-    'Tambahan dana (margin) dihitung setiap bulan dari saldo tabungan, mulai bulan ke-2'] },
+    'Lama menabung 1 – 15 tahun; makin lama, makin tinggi bagi hasil per tahun',
+    'Bagi hasil dihitung setiap bulan dari saldo tabungan dengan nisbah 30:70 (nasabah : KSPPS), mulai bulan ke-2'] },
   dprumah: { pitch:'Siapkan uang muka rumah untuk program Rumany atau Rumsy.', ket:[
     'Setoran awal minimal Rp10.000.000',
     'Setoran bulanan opsional, minimal Rp1.000.000 bila diisi',
@@ -768,7 +771,7 @@ function waText(c){
   L.push(`• *Estimasi diterima: ±${rpw(c.nilai)}*, jatuh tempo ${mlab(ym, c.N - 1, true)}`);
   if (P.id === 'qurban') L.push(`• Bila patungan 7 orang: ±${rpw(c.nilai * 7)}`);
   if (P.id === 'dprumah') L.push(`• Cukup untuk DP 25% rumah seharga ±${rpw(c.nilai / .25)}`);
-  L.push('', '_Angka di atas adalah estimasi dan belum mengikat. Nilai final mengikuti akad yang ditandatangani nasabah dan KSPPS Syirkah Kebaikan Indonesia._');
+  L.push('', '_Angka di atas adalah estimasi dan belum mengikat, bukan jaminan hasil. Nilai final mengikuti akad yang ditandatangani nasabah dan KSPPS Syirkah Kebaikan Indonesia._');
   if (P.status === 'draf') L.push('_Produk ini masih dalam kajian, sehingga angka dapat berubah._');
   L.push('', '*Informasi & pendaftaran*', 'KSPPS Syirkah Kebaikan Indonesia', 'Jl. Kijang No. 34 A, Maricaya, Kota Makassar', 'Telp/WA: 0856-0836-5555', 'Email: syirkahkebaikanindonesia@gmail.com');
   return L.join('\n');
@@ -784,9 +787,8 @@ function renderCompare(c){
   const mode = S.cmp; let set, cur, mk, lab, sub;
   if (mode === 'durasi'){
     cur = c.i.durasi; set = [...P.dur.cmp]; mk = v => build(P.id, inp({ durasi:v }));
-    const ikut = P.tier && S.margin == null;
-    lab = v => `${durLab(P, v)}${ikut ? ` · margin ${pcn(P.tier(v).k)}` : ''}`;
-    sub = `Setoran sama, durasi berbeda. ${ikut ? 'Margin standar naik di 6 dan 9 tahun. ' : P.tier ? `Margin tetap ${pcn(c.k)} sesuai pilihan. ` : ''}Ketuk salah satu untuk memakainya.`;
+    lab = v => `${durLab(P, v)}${P.tier ? ` · ${pc2(P.tier(v).k)}/thn` : ''}`;
+    sub = `Setoran sama, durasi berbeda. ${P.tier ? `Bagi hasil per tahun naik di ${P.tierSeg.slice(1).map(x => x[1].split('–')[0]).join(' dan ')} tahun. ` : ''}Ketuk salah satu untuk memakainya.`;
   } else if (mode === 'bulanan'){
     cur = c.i.bulanan; set = [...P.cmpBul]; mk = v => build(P.id, inp({ bulanan:v }));
     const auto = P.dur.mode === 'auto';
@@ -807,7 +809,7 @@ function renderCompare(c){
     return `<button type="button" class="opt-row" data-use="${mode}:${v}" aria-pressed="${on}">
       <div><div class="k">${mode === 'durasi' ? 'Pilihan' : LAB[mode]}</div><div class="v">${lab(v)}</div></div>
       <div><div class="k">Nilai akhir</div><div class="v big">${rp(x.nilai)}</div></div>
-      <div><div class="k">Total margin</div><div class="v">${rp(x.margin)}</div></div>
+      <div><div class="k">Total ${tahunan(P) ? 'bagi hasil' : 'margin'}</div><div class="v">${rp(x.margin)}</div></div>
       <div class="act">${on ? '<span class="chip ok">Dipilih</span>' : '<span class="chip mute">Pakai</span>'}</div></button>`; }).join('');
 }
 
@@ -844,7 +846,7 @@ function renderChart(c){
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('width', W); svg.setAttribute('height', H);
   svg.innerHTML = g;
   chartGeo = { pts, X, Y, N, W, m, pw };
-  $('chartNote').textContent = `Margin menambah ${rpS(c.margin)} (${pc(c.margin / c.pokok, 0)})`;
+  $('chartNote').textContent = `${tahunan(c.P) ? 'Bagi hasil' : 'Margin'} menambah ${rpS(c.margin)} (${pc(c.margin / c.pokok, 0)})`;
   $('tip').hidden = true;
 }
 function chartHover(e){
@@ -890,7 +892,7 @@ function renderTimeline(c){
   $('detailBtn').textContent = S.detail ? 'Sembunyikan rincian' : 'Rincian per bulan';
   if (!S.detail) return;
   const rows = c.rows.map(r => `<tr class="${r.t === c.N ? 'hl' : ''}"><td>${r.t}</td><td style="text-align:left">${mlab(ym, r.t - 1)}</td><td>${r.d ? rp(r.d) : '—'}</td><td>${r.m ? rp(r.m) : '—'}</td><td>${rp(r.pokok)}</td><td>${rp(r.saldo)}</td></tr>`).join('');
-  $('detail').innerHTML = `<thead><tr><th>Bulan</th><th style="text-align:left">Periode</th><th>Setoran</th><th>Margin</th><th>Total setoran</th><th>Saldo</th></tr></thead><tbody>${rows}</tbody>`;
+  $('detail').innerHTML = `<thead><tr><th>Bulan</th><th style="text-align:left">Periode</th><th>Setoran</th><th>${tahunan(P) ? 'Bagi hasil' : 'Margin'}</th><th>Total setoran</th><th>Saldo</th></tr></thead><tbody>${rows}</tbody>`;
 }
 
 /* ===== Render: hitung dari target ===== */
@@ -923,7 +925,7 @@ function renderFit(c){
   const gap = c.nilai - T;
   cards.push(card({ label:'Pengaturan sekarang', good: gap >= -0.5,
     rows:[['Nilai akhir', rp(c.nilai)], ['Target', rp(T)], [gap >= -0.5 ? 'Lebih' : 'Kurang', rp(Math.abs(gap))], ['Jatuh tempo', mlab(S.mulai, c.N - 1)]],
-    note:`Tanpa margin, setoran yang sama hanya terkumpul ${rp(c.pokok)}.`,
+    note:`Tanpa bagi hasil, setoran yang sama hanya terkumpul ${rp(c.pokok)}.`,
     chip: gap >= -0.5 ? '<span class="chip ok">Target tercapai</span>' : `<span class="chip warn">Kurang ${rpS(-gap)}</span>` }));
   const M = F.mampu;
   for (const lv of P.levers){
@@ -933,7 +935,7 @@ function renderFit(c){
       const same = s.v === c.i.durasi;
       cards.push(card({ label:'Sesuaikan durasi', good:true,
         rows:[['Durasi minimal', durLab(P, s.v)], ['Nilai akhir', rp(s.x.nilai)], ['Jatuh tempo', mlab(S.mulai, s.x.N - 1)]],
-        note: same ? 'Durasi sekarang sudah paling pendek untuk target ini.' : `Durasi terpendek yang mencapai target dengan setoran sekarang.${P.tier && s.x.k !== c.k ? ` Tingkat margin menjadi ${s.x.k}%.` : ''}`,
+        note: same ? 'Durasi sekarang sudah paling pendek untuk target ini.' : `Durasi terpendek yang mencapai target dengan setoran sekarang.${P.tier && s.x.k !== c.k ? ` Bagi hasil menjadi ${pc2(s.x.k)} per tahun.` : ''}`,
         chip:'<span class="chip ok">Tercapai</span>', btn: same ? '' : `<button class="btn small" type="button" data-fit="durasi" data-v="${s.v}">Pakai</button>` }));
       continue;
     }
