@@ -444,7 +444,8 @@ textarea.copybox{width:100%; min-height:200px; border:1px solid var(--line); bor
 /* ===== Data produk: angka dan rumus dari file CREDIT RISK – FUNDING TABUNGAN (sheet BATAS NISBAH & MARGIN, skenario dasar) =====
    Nisbah bagi hasil 30:70 (nasabah : KSPPS) untuk semua tabungan.
    Bagi hasil bulan t = r × (setoran bulan t + saldo bulan t−1), mulai bulan ke-`ms`, dengan r = (1 + bagi hasil per tahun)^(1/12) − 1.
-   Pendidikan Anak: 6,95% / 7,20% / 7,45% per tahun untuk 3–5 / 6–8 / 9–12 tahun. Qurban 6,10%. Nikah 8,40%. Pensiun 4,99% / 5,31% / 5,63%.
+   Produk dengan dasar:'saldo' (Pendidikan Anak): bagi hasil bulan t = r × saldo bulan t−1, jadi setoran bulan ini baru mendapat bagi hasil bulan berikutnya.
+   Pendidikan Anak: 6,95% / 7,20% / 7,45% per tahun untuk 1–5 / 6–8 / 9–12 tahun. Qurban 6,10%. Nikah 8,40%. Pensiun 4,99% / 5,31% / 5,63%.
    DP Rumah dan Deposito Proyek belum masuk model nisbah: masih memakai tarif per bulan lama (`rate`).
    status: 'acc' = sudah disetujui · 'draf' = belum diputus komite.
    kunci: true = produk belum resmi; di versi publik pengaturannya terkunci (contoh tetap). */
@@ -464,14 +465,14 @@ async function bukaInternal(kode){
 const PRODUK = {
   pendidikan: { id:'pendidikan', nama:'Tabungan Pendidikan Anak', pendek:'Pendidikan Anak', status:'acc',
     desc:'Setoran Rp100.000 sampai Rp5 juta per bulan untuk biaya sekolah anak. Nisbah bagi hasil 30:70; makin panjang durasi, makin tinggi bagi hasil per tahun.',
-    rail:'Rp100rb–5jt/bln · 3–12 th · nisbah 30:70',
-    ms:1, pola:'bulanan',
+    rail:'Rp100rb–5jt/bln · 1–12 th · nisbah 30:70',
+    ms:2, dasar:'saldo', pola:'bulanan',
     bul:{ mode:'range', min:1e5, max:5e6, def:1e5, step:5e4 }, anak:true,
-    dur:{ unit:'tahun', mode:'range', min:3, max:12, def:6, cmp:[3,5,6,8,9,12] },
-    tier: y => y <= 5 ? { k:.0695, lab:'3–5 tahun' } : y <= 8 ? { k:.072, lab:'6–8 tahun' } : { k:.0745, lab:'9–12 tahun' },
-    tierSeg:[[3,'3–5 th'],[6,'6–8 th'],[9,'9–12 th']],
-    tierInternal: y => { const t = INTERNAL_TIERS; return y <= 5 ? { k:t[0], lab:'3–5 tahun' } : y <= 8 ? { k:t[1], lab:'6–8 tahun' } : { k:t[2], lab:'9–12 tahun' }; },
-    syarat:['Setoran <b>Rp100.000–Rp5 jt</b>/bulan', 'Nisbah <b>30:70</b> (nasabah : KSPPS)', 'Bagi hasil <b>6,95%–7,45%/tahun</b> sesuai durasi', 'Berhenti sebelum jatuh tempo: <b>pokok saja</b>'],
+    dur:{ unit:'tahun', mode:'range', min:1, max:12, def:6, cmp:[1,5,6,8,9,12] },
+    tier: y => y <= 5 ? { k:.0695, lab:'1–5 tahun' } : y <= 8 ? { k:.072, lab:'6–8 tahun' } : { k:.0745, lab:'9–12 tahun' },
+    tierSeg:[[1,'1–5 th'],[6,'6–8 th'],[9,'9–12 th']],
+    tierInternal: y => { const t = INTERNAL_TIERS; return y <= 5 ? { k:t[0], lab:'1–5 tahun' } : y <= 8 ? { k:t[1], lab:'6–8 tahun' } : { k:t[2], lab:'9–12 tahun' }; },
+    syarat:['Setoran <b>Rp100.000–Rp5 jt</b>/bulan', 'Lama menabung <b>1–12 tahun</b>', 'Nisbah <b>30:70</b> (nasabah : KSPPS)', 'Bagi hasil <b>6,95%–7,45%/tahun</b> sesuai durasi', 'Berhenti sebelum jatuh tempo: <b>pokok saja</b>'],
     cmp:['durasi','bulanan'], cmpBul:[1e5, 5e5, 1e6, 25e5, 5e6], levers:['bulanan','durasi'], target:20e6, mampu:2e5, mampuLbl:'Kemampuan setor per bulan',
     berhenti:'Pokok saja, tanpa bagi hasil', ahliWaris:true,
     tag:'Nisbah 30:70 tercantum di akad' },
@@ -575,7 +576,7 @@ function simulate(P, i){
   let bal = 0, pokok = 0; const rows = [];
   for (let t = 1; t <= N; t++){
     const d = setoranBulan(P, i, t);
-    const m = t >= P.ms ? r * (d + bal) : 0;
+    const m = t >= P.ms ? r * (P.dasar === 'saldo' ? bal : d + bal) : 0;
     bal += d + m; pokok += d;
     rows.push({ t, d, m, pokok, saldo: bal });
   }
@@ -770,8 +771,9 @@ function renderTicket(c){
 const WA = {
   pendidikan: { pitch:'Siapkan biaya sekolah anak sejak sekarang dengan menabung rutin setiap bulan.', ket:[
     'Setoran Rp100.000 – Rp5.000.000 per bulan, jumlahnya sama setiap bulan',
+    'Lama menabung 1 – 12 tahun',
     '1 rekening untuk 1 anak',
-    'Bagi hasil dihitung setiap bulan dari saldo tabungan dengan nisbah 30:70 (nasabah : KSPPS)',
+    'Bagi hasil dihitung setiap bulan dari saldo bulan sebelumnya dengan nisbah 30:70 (nasabah : KSPPS), mulai bulan ke-2',
     'Makin lama menabung, makin tinggi bagi hasil per tahun',
     'Bila berhenti sebelum jatuh tempo, yang dicairkan hanya setoran pokok',
     'Bila terjadi force majeure, hak tabungan dialihkan kepada ahli waris yang tercantum di akad'] },
