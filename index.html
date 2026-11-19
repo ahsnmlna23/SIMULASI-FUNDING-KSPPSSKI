@@ -142,6 +142,7 @@ input[type="range"]::-moz-range-thumb{width:14px; height:14px; border-radius:50%
 .lockbox{display:flex; gap:10px; align-items:flex-start; background:var(--brand-soft); color:var(--brand-fg); border-radius:10px; padding:10px 12px; font-size:13px; font-weight:600; line-height:1.45}
 .lockbox svg{flex:none; margin-top:2px}
 #internalBadge{align-self:center}
+.tk-actions .btn.reg{background:var(--t-hi); color:#06203F; border-color:transparent; font-weight:700}
 
 /* Hasil */
 .results{display:flex; flex-direction:column; gap:16px; min-width:0}
@@ -329,7 +330,7 @@ textarea.copybox{width:100%; min-height:200px; border:1px solid var(--line); bor
           <div class="locks" id="lockVals"></div>
         </div>
 
-        <div class="field" id="wAnak">
+        <div class="field" id="sAnakW">
           <label for="anak">Jumlah anak <span class="hint">1 rekening per anak</span></label>
           <div class="stepper"><button type="button" id="anakMinus" aria-label="Kurangi anak">−</button><input id="anak" inputmode="numeric" value="1"><button type="button" id="anakPlus" aria-label="Tambah anak">+</button></div>
         </div>
@@ -341,7 +342,7 @@ textarea.copybox{width:100%; min-height:200px; border:1px solid var(--line); bor
           <p class="note" id="penNote"></p>
         </div>
 
-        <div class="field" id="wAwal">
+        <div class="field" id="sAwalW">
           <label for="awal">Setoran awal <span class="hint" id="awalHint"></span></label>
           <div class="money"><span>Rp</span><input id="awal" inputmode="numeric" autocomplete="off"></div>
           <div class="clampmsg" id="awalMsg" hidden></div>
@@ -406,6 +407,7 @@ textarea.copybox{width:100%; min-height:200px; border:1px solid var(--line); bor
         <div class="perf" aria-hidden="true"></div>
         <div class="tk-stub" id="tkStub"></div>
         <div class="tk-actions" id="tkActions">
+          <button class="btn reg" id="regBtn" type="button" hidden>Daftarkan nasabah ini</button>
           <button class="btn" id="copyBtn" type="button">Salin ringkasan untuk WhatsApp</button>
           <button class="btn alt" id="showTextBtn" type="button">Lihat teks</button>
         </div>
@@ -492,7 +494,7 @@ textarea.copybox{width:100%; min-height:200px; border:1px solid var(--line); bor
   </footer>
 </div>
 <button class="dock" id="dock" type="button" aria-label="Lihat kartu simulasi"></button>
-<div class="toast" id="toast" role="status"></div>
+<div class="toast" id="simToast" role="status"></div>
 
 <script>
 /* ===== Data produk: angka dan rumus dari file CREDIT RISK – FUNDING 10 TABUNGAN (sheet BATAS NISBAH & MARGIN blok D dan D2, 19 November 2026) =====
@@ -505,7 +507,8 @@ textarea.copybox{width:100%; min-height:200px; border:1px solid var(--line); bor
    DP Rumah dan Deposito Proyek tidak ada di file 10 tabungan dan belum masuk model nisbah: masih memakai tarif per bulan lama (`rate`).
    status: 'acc' = sudah disetujui · 'draf' = belum diputus komite.
    kunci: true = produk belum resmi; di versi publik pengaturannya terkunci (contoh tetap). */
-const AKSES_PENUH = false;   // true = versi internal (artifact privat) · false = versi publik (GitHub Pages)
+let AKSES_PENUH = false;      // true = versi internal · false = versi publik (GitHub Pages) · versi gabungan: true hanya untuk pemilik (Credit Risk)
+let BOLEH_INTERNAL = true;   // tombol simulasi internal (kode Credit Risk) · versi gabungan: hanya pemilik
 const TERMIN = [2, 1.5, 1.5, 2].map(x => x / 7);
 /* Simulasi internal Tabungan Anak: angka disimpan terenkripsi (AES-GCM, kunci dari kode persetujuan Credit Risk lewat PBKDF2).
    Tanpa kode, angka tidak bisa dibaca dari halaman ini. Tidak untuk dipublikasikan ke masyarakat atau nasabah. */
@@ -791,7 +794,7 @@ function renderControls(c){
       <div class="lock-item"><span class="k">${ICON.lock} Durasi</span><span class="v">${durLab(P, i.durasi)}</span><span class="s">${mlab(S.mulai, 0)} – ${mlab(S.mulai, c.N - 1)}</span></div>`;
   }
   $('wDurasi').hidden = L; $('wMulai').hidden = L;
-  $('wAnak').hidden = !P.anak || L;
+  $('sAnakW').hidden = !P.anak || L;
   if (P.anak && notFocused($('anak'))) $('anak').value = i.anak;
 
   $('wPenempatan').hidden = !P.pen || L;
@@ -802,7 +805,7 @@ function renderControls(c){
     $('penNote').innerHTML = 'Disetor 4 termin: ' + TERMIN.map((f, k) => `bulan ${k + 1} <b>${rpS(i.penempatan * f)}</b>`).join(' · ') + '.';
   }
 
-  $('wAwal').hidden = !P.awal || L;
+  $('sAwalW').hidden = !P.awal || L;
   if (P.awal){
     $('awalHint').textContent = `min. ${rpS(P.awal.min)} · disetor bulan ke-1`;
     if (notFocused($('awal'))) $('awal').value = nf.format(S.awal);
@@ -849,7 +852,7 @@ function renderControls(c){
     : `Setoran ${mlab(S.mulai, 0)} – ${mlab(S.mulai, c.N - 1)}. Jatuh tempo <b>${mlab(S.mulai, c.N - 1)}</b>.`;
 
   $('mSegW').hidden = true;
-  $('intW').hidden = !(P.tierInternal && !L); $('intChk').checked = !!c.internal;
+  $('intW').hidden = !(P.tierInternal && !L && BOLEH_INTERNAL); $('intChk').checked = !!c.internal;
   if ($('intW').hidden) $('intApprove').hidden = true;
   const rateTxt = tahunan(P) ? `${pc2(c.k)} per tahun` : `${pc(P.rate)} per bulan`;
   const rateSub = tahunan(P) ? `estimasi${c.tier ? ` tingkat ${c.tier.lab}` : ''} · nisbah 30:70 · ${pc3(c.r)} per bulan dari saldo${P.ms > 1 ? `, mulai bulan ke-${P.ms}` : ''}` : `dihitung dari saldo, mulai bulan ke-${P.ms}`;
@@ -902,6 +905,8 @@ function renderTicket(c){
   if (c.internal){ const t = INTERNAL_TIERS;
     $('intBanner').textContent = `SIMULASI INTERNAL — disetujui Credit Risk: ${S.approval.nama} · ${S.approval.waktu}. Margin ${pc2(t[0])} / ${pc2(t[1])} / ${pc2(t[2])} melanggar batas bagi hasil 9% per tahun (Permenkop UKM 8/2023 Pasal 26 ayat 4). Angka ini TIDAK dipublikasikan ke masyarakat atau nasabah dan tidak boleh dikirim ke calon nasabah.`; }
   $('tkActions').hidden = terkunci(P) || c.internal; if (terkunci(P) || c.internal) $('copyBox').hidden = true;
+  const ADM = window.KSPPS_ADM;   // ada hanya di halaman gabungan Simulasi + Admin
+  $('regBtn').hidden = !(ADM && ADM.bisa(P.id) && P.status === 'acc' && !c.internal);
   $('tkHero').innerHTML = `<span class="lab">${P.pola === 'termin' ? 'Modal + keuntungan cair' : P.tanpaJT ? 'Saldo di akhir simulasi' : 'Nilai akhir saat jatuh tempo'}</span>
     <span class="val">${rp(c.nilai)}</span>
     <span class="then">dari ${P.pola === 'termin' ? 'penempatan' : 'total setoran'} ${rp(c.pokok)}${i.anak > 1 ? ` · ${rp(c.nilai / i.anak)} per anak` : ''}</span>`;
@@ -1217,7 +1222,7 @@ function render(){
   $('fenceTxt').innerHTML = `<span><b>${c.P.nama}</b></span>` + c.P.syarat.map(s => `<span>${s}</span>`).join('');
   $('dock').innerHTML = `<span><span class="k">Nilai akhir · ${mlab(S.mulai, c.N - 1)}</span><span class="v">${rp(c.nilai)}</span></span><span class="r">${c.P.pendek}${c.internal ? ' · internal' : ''}<span>setoran ${rpS(c.pokok)}</span></span>`;
   const L = terkunci(c.P);
-  $('internalBadge').hidden = !AKSES_PENUH;
+  if ($('internalBadge')) $('internalBadge').hidden = !AKSES_PENUH;
   $('secCmp').hidden = L;
   $('secFit').hidden = L || !c.P.levers.length;
   renderRail(); renderControls(c); renderTicket(c); renderNisbah(c); renderChart(c); renderTimeline(c);
@@ -1225,7 +1230,7 @@ function render(){
   if (!$('secFit').hidden) renderFit(c);
   $('copyBox').value = waText(c);
 }
-function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 1800); }
+function toast(msg){ const t = $('simToast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 1800); }
 
 /* ===== Interaksi ===== */
 $('rail').addEventListener('click', e => { const b = e.target.closest('[data-p]'); if (!b) return; applyProduk(b.dataset.p); render(); });
@@ -1294,11 +1299,18 @@ $('copyBtn').addEventListener('click', () => {
   const fallback = () => { const box = $('copyBox'); box.hidden = false; box.value = txt; box.focus(); box.select(); toast('Teks dipilih, salin manual'); };
   try { navigator.clipboard.writeText(txt).then(() => toast('Ringkasan disalin, tinggal tempel di WhatsApp'), fallback); } catch(e){ fallback(); }
 });
+$('regBtn').addEventListener('click', () => {
+  const c = lastC, ADM = window.KSPPS_ADM; if (!c || !ADM) return;
+  ADM.daftar({ produk:c.P.id, mulai:S.mulai, bulanan:c.i.bulanan, awal:c.i.awal, lama:c.N, anak:c.i.anak, nilai:c.nilai });
+});
 $('showTextBtn').addEventListener('click', () => { const box = $('copyBox'); box.hidden = !box.hidden; $('showTextBtn').textContent = box.hidden ? 'Lihat teks' : 'Tutup teks'; });
 let rzT; window.addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(render, 150); });
 
 applyProduk('pendidikan');
 render();
+/* Antarmuka untuk halaman gabungan Simulasi + Admin: satu sumber angka produk, dan hak akses mengikuti peran pengguna. */
+function setAkses(penuh){ AKSES_PENUH = !!penuh; BOLEH_INTERNAL = !!penuh; if (!AKSES_PENUH && terkunci(PRODUK[S.prod])) applyProduk(S.prod); $('rail').innerHTML = ''; render(); }
+window.KSPPS_SIM = { PRODUK, ORDER, render, setAkses };
 </script>
 </body>
 </html>
