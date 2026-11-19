@@ -115,6 +115,12 @@ input[type="range"]::-moz-range-thumb{width:14px; height:14px; border-radius:50%
 .seg button{position:relative}
 .seg button.std::after{content:""; position:absolute; top:5px; right:5px; width:6px; height:6px; border-radius:50%; background:var(--cyan)}
 .note{font-size:12.5px; color:var(--muted); margin:0}
+.explain{margin-top:14px; border-top:1px solid var(--line); padding-top:12px}
+.explain summary{cursor:pointer; font-weight:700; color:var(--brand-fg)}
+.explain h3{font-size:14px; margin:16px 0 6px}
+.explain p{font-size:13.5px; margin:8px 0}
+.explain .formula{background:var(--surface-2); border-radius:10px; padding:10px 12px; font-style:italic; color:var(--brand-fg)}
+.explain td{white-space:normal}
 .note b{color:var(--ink)}
 .clampmsg{font-size:12.5px; color:var(--warn); background:var(--warn-soft); border-radius:8px; padding:6px 10px}
 .btn{border:1px solid var(--line); background:var(--surface); border-radius:10px; padding:9px 14px; min-height:40px; cursor:pointer; font-weight:600; font-size:13.5px; display:inline-flex; align-items:center; gap:8px; justify-content:center}
@@ -400,6 +406,40 @@ textarea.copybox{width:100%; min-height:200px; border:1px solid var(--line); bor
       </article>
       <textarea class="copybox" id="copyBox" hidden readonly aria-label="Teks ringkasan"></textarea>
 
+      <section class="panel" id="secNis" aria-labelledby="h-nis">
+        <h2 id="h-nis">Pembagian hasil nisbah 30 : 70</h2>
+        <p class="sub" id="nisSub"></p>
+        <div class="tbl-wrap" style="max-height:none"><table id="nisTbl"></table></div>
+        <p class="note" id="nisNote" style="margin-top:10px"></p>
+        <details class="explain">
+          <summary>Penjelasan nisbah bagi hasil (sesuai surat Credit Risk, 19 November 2026)</summary>
+          <h3>Cara kerja</h3>
+          <p>Semua tabungan memakai <b>nisbah 30 : 70</b> (nasabah : KSPPS). Bagi hasil berasal dari pendapatan dana tabungan yang disalurkan ke pembiayaan Divisi Lending, lalu dibagi sesuai nisbah. <b>Bagian nasabah 30% diterima penuh tanpa potongan.</b> Keuntungan KSPPS hanya dari bagian 70%, yang juga dipakai untuk biaya operasional dan cadangan.</p>
+          <p class="formula">Imbal hasil dana = imbal hasil penyaluran × porsi dana disalurkan<br>Bagi hasil per tahun = 30% × imbal hasil dana &nbsp;·&nbsp; per bulan = per tahun ÷ 12</p>
+          <p>Bagi hasil dibukukan ke saldo setiap bulan, mulai bulan ke-2. Pendidikan Anak: dihitung dari saldo bulan sebelumnya. Qurban, Nikah, Pensiun: dari setoran bulan itu ditambah saldo bulan sebelumnya. Dana tabungan disalurkan lewat <b>pool Safar</b> (Pendidikan Anak, Qurban, Nikah; imbal hasil 26,89% per tahun) dan <b>pool umum</b> (Pensiun; Safar 50%, RUMSY 30%, Rumany maks. 20%; 20,33% per tahun).</p>
+          <h3>Bagi hasil per produk</h3>
+          <div class="tbl-wrap" style="max-height:none"><table>
+            <thead><tr><th>Produk / lama menabung</th><th>Porsi disalurkan</th><th>Imbal hasil dana</th><th>Bagi hasil / tahun</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td>Pendidikan Anak, 1–5 tahun</td><td>86,2%</td><td>23,17%</td><td>6,95%</td><td>Patuh</td></tr>
+              <tr><td>Pendidikan Anak, 6–8 tahun</td><td>89,3%</td><td>24,00%</td><td>7,20%</td><td>Patuh</td></tr>
+              <tr><td>Pendidikan Anak, 9–12 tahun</td><td>90,0%</td><td>24,20%</td><td>7,45%</td><td>Patuh, butuh tambahan KSPPS</td></tr>
+              <tr><td>Qurban, 3–11 bulan</td><td>75,6%</td><td>20,33%</td><td>6,10%</td><td>Patuh</td></tr>
+              <tr><td>Nikah, 1–10 tahun</td><td>90,0%</td><td>24,20%</td><td>8,40%</td><td>Patuh, butuh tambahan KSPPS</td></tr>
+              <tr><td>Pensiun (draf), 1–5 / 6–10 / 11–15 tahun</td><td>80 / 85 / 90%</td><td>16,26 / 17,28 / 18,30%</td><td>4,88 / 5,18 / 5,49%</td><td>Patuh</td></tr>
+            </tbody></table></div>
+          <p>Kemampuan nisbah 30:70 paling tinggi <b>7,26% per tahun</b> (30% × 26,89% × porsi 90%). Pendidikan Anak 9–12 tahun dan Nikah berada di atas angka itu, jadi selisihnya (0,19% dan 1,14% per tahun) ditambah dari bagian KSPPS; pada dua paket ini nasabah menerima sedikit lebih dari 30% pendapatan.</p>
+          <h3>Contoh saldo Rp100.000.000 selama 1 tahun (Pendidikan Anak 1–5 tahun)</h3>
+          <div class="tbl-wrap" style="max-height:none"><table>
+            <tbody>
+              <tr><td>Pendapatan dana (23,17%)</td><td>Rp 23.166.667</td></tr>
+              <tr class="hl"><td>Bagian nasabah 30% = 6,95% per tahun (Rp 579.167 per bulan)</td><td>Rp 6.950.000</td></tr>
+              <tr><td>Bagian KSPPS 70%</td><td>Rp 16.216.667</td></tr>
+            </tbody></table></div>
+          <p class="note" style="margin-top:8px">Semua bagi hasil di bawah batas 9% per tahun (Permenkop UKM 8/2023 Pasal 26 ayat 4). Angka adalah estimasi; yang dibayar mengikuti pendapatan nyata sesuai nisbah di akad.</p>
+        </details>
+      </section>
+
       <section class="panel" id="secCmp" aria-labelledby="h-cmp">
         <h2 id="h-cmp">Bandingkan pilihan <span class="cmpseg" id="cmpSeg" role="group" aria-label="Bandingkan berdasarkan"></span></h2>
         <p class="sub" id="cmpSub"></p>
@@ -434,7 +474,7 @@ textarea.copybox{width:100%; min-height:200px; border:1px solid var(--line); bor
 
   <footer>
     <span>Angka pada halaman ini adalah simulasi dari hitungan Credit Risk. Nilai final mengikuti akad yang ditandatangani nasabah dan <b>KSPPS Syirkah Kebaikan Indonesia</b>.</span>
-    <span>Divisi Funding · KSPPS SKI · <b>Versi 19 Nov 2026 (rev. 2)</b> — nisbah 30:70: bagian nasabah 30% = 6,95% per tahun, diterima penuh (0,579% per bulan); bagian KSPPS 70%</span>
+    <span>Divisi Funding · KSPPS SKI · <b>Versi 19 Nov 2026 (rev. 3)</b> — nisbah 30:70: bagian nasabah 30% = 6,95% per tahun, diterima penuh (0,579% per bulan); bagian KSPPS 70%</span>
   </footer>
 </div>
 <button class="dock" id="dock" type="button" aria-label="Lihat kartu simulasi"></button>
@@ -566,6 +606,9 @@ function setoranBulan(P, i, t){
   if (P.pola === 'awal') return t === 1 ? i.awal : i.bulanan;
   return i.bulanan * i.anak;
 }
+const NISBAH = .3;                       // bagian nasabah
+const PMAX_SAFAR = .241966572481536;     // pendapatan dana tertinggi pool Safar = 26,89% × porsi 90% (sheet BATAS)
+const PEND_PENSIUN = [.162634448511447, .172799101543412, .182963754575377];   // pool umum × porsi 80/85/90%
 function build(prod, raw){ const P = PRODUK[prod]; return simulate(P, clean(P, raw)); }
 const tahunan = P => P.rate == null;   // true = model nisbah (bagi hasil per tahun)
 function simulate(P, i){
@@ -582,7 +625,14 @@ function simulate(P, i){
   }
   const nilai = rows.length ? rows[rows.length - 1].saldo : 0;
   const margin = nilai - pokok;
-  return { P, i, N, k, r, tier, rows, pokok, nilai, margin, internal: !!i.internal, rateLab: k != null ? `${pc2(k)}/tahun` : `${pc(P.rate)}/bulan` };
+  // Pembagian hasil nisbah: pendapatan dana per tahun (imbal hasil penyaluran × porsi disalurkan), bagian nasabah 30%, sisanya KSPPS
+  let split = null;
+  if (k != null && r > 0){
+    const pend = P.id === 'pensiun' ? PEND_PENSIUN[i.durasi <= 5 ? 0 : i.durasi <= 10 ? 1 : 2] : Math.min(k / NISBAH, PMAX_SAFAR);
+    const pendapatan = margin / r * pend / 12, nasabah = NISBAH * pendapatan;
+    split = { pend, pendapatan, nasabah, tambahan: Math.max(0, margin - nasabah), kspps: pendapatan - margin };
+  }
+  return { P, i, N, k, r, tier, rows, pokok, nilai, margin, split, internal: !!i.internal, rateLab: k != null ? `${pc2(k)}/tahun` : `${pc(P.rate)}/bulan` };
 }
 
 /* ===== Format ===== */
@@ -713,6 +763,26 @@ function renderControls(c){
   $('locks').innerHTML = `<div class="lock-item"><span class="k">${ICON.lock} ${tahunan(P) ? 'Bagi hasil' : 'Tingkat margin'}</span><span class="v">${rateTxt}</span><span class="s">${rateSub}</span></div>
     <div class="lock-item"><span class="k">${ICON.lock} Total ${tahunan(P) ? 'bagi hasil' : 'margin'}</span><span class="v">${rp(c.margin)}</span><span class="s">${pc(c.margin / c.pokok, 1)} dari total setoran</span></div>`;
   $('mulai').value = S.mulai;
+}
+
+/* ===== Render: pembagian hasil nisbah ===== */
+function renderNisbah(c){
+  const x = c.split;
+  $('secNis').hidden = !x;
+  if (!x) return;
+  const row = (k, v, p, cls = '') => `<tr class="${cls}"><td>${k}</td><td>${rp(v)}</td><td>${p}</td></tr>`;
+  $('nisSub').textContent = `Pendapatan dana ${pc2(x.pend)} per tahun (imbal hasil penyaluran × porsi disalurkan). Bagian nasabah 30% = ${pc2(NISBAH * x.pend)} per tahun.`;
+  $('nisTbl').innerHTML = `<thead><tr><th>Selama menabung</th><th>Rupiah</th><th>Porsi</th></tr></thead><tbody>
+    ${row('Pendapatan dari dana nasabah (estimasi)', x.pendapatan, '100%')}
+    ${row('Bagian nasabah sesuai nisbah 30%', x.nasabah, '30%')}
+    ${x.tambahan > 0.5 ? row('Tambahan dari bagian KSPPS', x.tambahan, pc(x.tambahan / x.pendapatan, 1)) : ''}
+    ${row('Total bagi hasil diterima nasabah', c.margin, pc(c.margin / x.pendapatan, 1), 'hl')}
+    ${row('Bagian KSPPS bersih', x.kspps, pc(x.kspps / x.pendapatan, 1))}</tbody>`;
+  $('nisNote').textContent = x.kspps < -0.5
+    ? 'Bagian KSPPS minus: bagi hasil yang dijanjikan melebihi seluruh pendapatan dana, sehingga KSPPS membayar dari modal.'
+    : x.tambahan > 0.5
+    ? `Bagi hasil ${pc2(c.k)} per tahun berada di atas bagian nisbah 30% (${pc2(NISBAH * x.pend)}), jadi selisihnya ditambah dari bagian KSPPS. Nasabah menerima ${pc(c.margin / x.pendapatan, 1)} dari pendapatan.`
+    : 'Bagian nasabah 30% diterima penuh tanpa potongan. Keuntungan KSPPS hanya dari bagian 70%, yang juga dipakai untuk biaya operasional dan cadangan.';
 }
 
 /* ===== Render: kartu simulasi ===== */
@@ -1017,7 +1087,7 @@ function render(){
   $('internalBadge').hidden = !AKSES_PENUH;
   $('secCmp').hidden = L;
   $('secFit').hidden = L || !c.P.levers.length;
-  renderRail(); renderControls(c); renderTicket(c); renderChart(c); renderTimeline(c);
+  renderRail(); renderControls(c); renderTicket(c); renderNisbah(c); renderChart(c); renderTimeline(c);
   if (!L) renderCompare(c);
   if (!$('secFit').hidden) renderFit(c);
   $('copyBox').value = waText(c);
