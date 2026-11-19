@@ -70,7 +70,14 @@ button,input,select{font:inherit; color:inherit}
 .fence svg{flex:none}
 
 /* Rel produk */
-.rail{display:grid; grid-template-columns:repeat(6, minmax(0,1fr)); gap:10px; margin-block:20px 18px}
+.rail{display:flex; flex-direction:column; gap:14px; margin-block:20px 18px}
+.rail-h{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:12.5px; color:var(--muted); margin-bottom:8px}
+.rail-row{display:grid; gap:10px}
+.rail-row.acc{grid-template-columns:repeat(3, minmax(0,1fr))}
+.rail-row.draf{grid-template-columns:repeat(5, minmax(0,1fr))}
+.rail-row.draf .prog{padding:9px 11px; gap:3px}
+.rail-row.draf .prog .pn{font-size:13px}
+.prog .pn svg{vertical-align:-1px; color:var(--muted); margin-right:3px}
 .prog{text-align:left; background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:12px 13px; cursor:pointer; display:flex; flex-direction:column; gap:5px; transition:border-color .15s, box-shadow .15s; min-width:0}
 .prog:hover{border-color:var(--brand-fg)}
 .prog[aria-pressed="true"]{border-color:var(--brand); box-shadow:inset 0 0 0 1px var(--brand); background:var(--brand-soft)}
@@ -242,7 +249,7 @@ footer b{color:var(--brand-fg)}
 .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
 textarea.copybox{width:100%; min-height:200px; border:1px solid var(--line); border-radius:10px; padding:10px; background:var(--surface); font:13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; color:var(--ink)}
 
-@media (max-width: 1100px){ .rail{grid-template-columns:repeat(3, minmax(0,1fr))} }
+@media (max-width: 1100px){ .rail-row.draf{grid-template-columns:repeat(4, minmax(0,1fr))} }
 @media (max-width: 1020px){
   .bench{grid-template-columns:minmax(0,1fr)}
   .top .addr{display:none}
@@ -262,7 +269,7 @@ textarea.copybox{width:100%; min-height:200px; border:1px solid var(--line); bor
   .brand .sep, .brand .app-name{display:none}
   .fit-grid{grid-template-columns:minmax(0,1fr)}
 }
-@media (max-width: 600px){ .rail{grid-template-columns:repeat(2, minmax(0,1fr))} }
+@media (max-width: 600px){ .rail-row{display:flex; overflow-x:auto; scroll-snap-type:x proximity; padding-bottom:4px} .rail-row .prog{flex:0 0 64%; scroll-snap-align:start} .rail-row.draf .prog{flex-basis:46%} }
 @media (max-width: 520px){
   .tk-trio{grid-template-columns:repeat(2, minmax(0,1fr))}
   .tk-trio > div:last-child{grid-column:span 2}
@@ -412,23 +419,30 @@ textarea.copybox{width:100%; min-height:200px; border:1px solid var(--line); bor
         <div class="tbl-wrap" style="max-height:none"><table id="nisTbl"></table></div>
         <p class="note" id="nisNote" style="margin-top:10px"></p>
         <details class="explain">
-          <summary>Penjelasan nisbah bagi hasil (sesuai surat Credit Risk, 19 November 2026)</summary>
+          <summary>Penjelasan nisbah bagi hasil (hitungan Credit Risk, file 10 tabungan, 19 November 2026)</summary>
           <h3>Cara kerja</h3>
           <p>Semua tabungan memakai <b>nisbah 30 : 70</b> (nasabah : KSPPS). Bagi hasil berasal dari pendapatan dana tabungan yang disalurkan ke pembiayaan Divisi Lending, lalu dibagi sesuai nisbah. <b>Bagian nasabah 30% diterima penuh tanpa potongan.</b> Keuntungan KSPPS hanya dari bagian 70%, yang juga dipakai untuk biaya operasional dan cadangan.</p>
           <p class="formula">Imbal hasil dana = imbal hasil penyaluran × porsi dana disalurkan<br>Bagi hasil per tahun = 30% × imbal hasil dana &nbsp;·&nbsp; per bulan = per tahun ÷ 12</p>
-          <p>Bagi hasil dibukukan ke saldo setiap bulan, mulai bulan ke-2. Pendidikan Anak: dihitung dari saldo bulan sebelumnya. Qurban, Nikah, Pensiun: dari setoran bulan itu ditambah saldo bulan sebelumnya. Dana tabungan disalurkan lewat <b>pool Safar</b> (Pendidikan Anak, Qurban, Nikah; imbal hasil 26,89% per tahun) dan <b>pool umum</b> (Pensiun; Safar 50%, RUMSY 30%, Rumany maks. 20%; 20,33% per tahun).</p>
+          <p>Bagi hasil dibukukan ke saldo setiap bulan, mulai bulan ke-2. Pendidikan Anak dan tujuh produk usulan baru: dihitung dari saldo bulan sebelumnya. Qurban, Nikah, Pensiun: dari setoran bulan itu ditambah saldo bulan sebelumnya. Dana tabungan disalurkan lewat <b>pool Safar</b> (semua produk kecuali Pensiun dan Pemakaman; imbal hasil 26,89% per tahun) dan <b>pool umum</b> (Pensiun dan Pemakaman; Safar 50%, RUMSY 30%, Rumany maks. 20%; 20,33% per tahun).</p>
           <h3>Bagi hasil per produk</h3>
           <div class="tbl-wrap" style="max-height:none"><table>
             <thead><tr><th>Produk / lama menabung</th><th>Porsi disalurkan</th><th>Imbal hasil dana</th><th>Bagi hasil / tahun</th><th>Status</th></tr></thead>
             <tbody>
-              <tr><td>Pendidikan Anak, 1–5 tahun</td><td>86,2%</td><td>23,17%</td><td>6,95%</td><td>Patuh</td></tr>
-              <tr><td>Pendidikan Anak, 6–8 tahun</td><td>89,3%</td><td>24,00%</td><td>7,20%</td><td>Patuh</td></tr>
-              <tr><td>Pendidikan Anak, 9–12 tahun</td><td>90,0%</td><td>24,20%</td><td>7,45%</td><td>Patuh, butuh tambahan KSPPS</td></tr>
-              <tr><td>Qurban, 3–11 bulan</td><td>75,6%</td><td>20,33%</td><td>6,10%</td><td>Patuh</td></tr>
-              <tr><td>Nikah, 1–10 tahun</td><td>90,0%</td><td>24,20%</td><td>8,40%</td><td>Patuh, butuh tambahan KSPPS</td></tr>
-              <tr><td>Pensiun (draf), 1–5 / 6–10 / 11–15 tahun</td><td>80 / 85 / 90%</td><td>16,26 / 17,28 / 18,30%</td><td>4,88 / 5,18 / 5,49%</td><td>Patuh</td></tr>
+              <tr><td>Pendidikan Anak, 1–5 tahun</td><td>86,2%</td><td>23,17%</td><td>6,95%</td><td>Disetujui</td></tr>
+              <tr><td>Pendidikan Anak, 6–8 tahun</td><td>89,3%</td><td>24,00%</td><td>7,20%</td><td>Disetujui</td></tr>
+              <tr><td>Pendidikan Anak, 9–12 tahun</td><td>90,0%</td><td>24,20%</td><td>7,26%</td><td>Disetujui</td></tr>
+              <tr><td>Qurban, 3–11 bulan</td><td>75,6%</td><td>20,33%</td><td>6,10%</td><td>Disetujui</td></tr>
+              <tr><td>Nikah, 1–10 tahun</td><td>90,0%</td><td>24,20%</td><td>7,26%</td><td>Disetujui</td></tr>
+              <tr><td>Pensiun, 1–5 / 6–10 / 11–15 tahun</td><td>80 / 85 / 90%</td><td>16,26 / 17,28 / 18,30%</td><td>4,88 / 5,18 / 5,49%</td><td>Draf</td></tr>
+              <tr><td>Rencana Haji</td><td>74,4%</td><td>20,00%</td><td>6,00%</td><td>Draf</td></tr>
+              <tr><td>Liburan, 12–36 bulan</td><td>70,0%</td><td>18,82%</td><td>5,65%</td><td>Draf</td></tr>
+              <tr><td>Renovasi Rumah, 12–60 bulan</td><td>74,4%</td><td>20,00%</td><td>6,00%</td><td>Draf</td></tr>
+              <tr><td>Sukarela</td><td>60,0%</td><td>16,13%</td><td>4,84%</td><td>Draf</td></tr>
+              <tr><td>Hari Raya, ±3 / 12 / ±15 bulan</td><td>13,3 / 56,4 / 60,7%</td><td>3,58 / 15,16 / 16,32%</td><td>1,07 / 4,55 / 4,90%</td><td>Draf</td></tr>
+              <tr><td>Wishlist, 12–36 bulan</td><td>62,0%</td><td>16,67%</td><td>5,00%</td><td>Draf</td></tr>
+              <tr><td>Pemakaman (pool umum)</td><td>82,0%</td><td>16,67%</td><td>5,00%</td><td>Draf</td></tr>
             </tbody></table></div>
-          <p>Kemampuan nisbah 30:70 paling tinggi <b>7,26% per tahun</b> (30% × 26,89% × porsi 90%). Pendidikan Anak 9–12 tahun dan Nikah berada di atas angka itu, jadi selisihnya (0,19% dan 1,14% per tahun) ditambah dari bagian KSPPS; pada dua paket ini nasabah menerima sedikit lebih dari 30% pendapatan.</p>
+          <p>Kemampuan nisbah 30:70 paling tinggi <b>7,26% per tahun</b> (30% × 26,89% × porsi 90%). Sesuai keputusan 19 November 2026, semua produk <b>tanpa tambahan dari bagian KSPPS</b>: Pendidikan Anak 9–12 tahun dan Nikah memakai 7,26% per tahun, tepat di kemampuan nisbah, sehingga nasabah menerima tepat 30% pendapatan di semua produk. Produk draf dapat berubah setelah diputus komite.</p>
           <h3>Contoh saldo Rp100.000.000 selama 1 tahun (Pendidikan Anak 1–5 tahun)</h3>
           <div class="tbl-wrap" style="max-height:none"><table>
             <tbody>
@@ -474,19 +488,21 @@ textarea.copybox{width:100%; min-height:200px; border:1px solid var(--line); bor
 
   <footer>
     <span>Angka pada halaman ini adalah simulasi dari hitungan Credit Risk. Nilai final mengikuti akad yang ditandatangani nasabah dan <b>KSPPS Syirkah Kebaikan Indonesia</b>.</span>
-    <span>Divisi Funding · KSPPS SKI · <b>Versi 19 Nov 2026 (rev. 3)</b> — nisbah 30:70: bagian nasabah 30% = 6,95% per tahun, diterima penuh (0,579% per bulan); bagian KSPPS 70%</span>
+    <span>Divisi Funding · KSPPS SKI · <b>Versi 19 Nov 2026 (rev. 4)</b> — 3 tabungan disetujui (Pendidikan Anak, Qurban, Nikah), produk lain draf · nisbah 30:70: bagian nasabah 30% diterima penuh, tanpa tambahan dari bagian KSPPS</span>
   </footer>
 </div>
 <button class="dock" id="dock" type="button" aria-label="Lihat kartu simulasi"></button>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
-/* ===== Data produk: angka dan rumus dari file CREDIT RISK – FUNDING TABUNGAN (sheet BATAS NISBAH & MARGIN, skenario dasar) =====
-   Nisbah bagi hasil 30:70 (nasabah : KSPPS) untuk semua tabungan.
+/* ===== Data produk: angka dan rumus dari file CREDIT RISK – FUNDING 10 TABUNGAN (sheet BATAS NISBAH & MARGIN blok D dan D2, 19 November 2026) =====
+   Nisbah bagi hasil 30:70 (nasabah : KSPPS) untuk semua tabungan, tanpa tambahan dari bagian KSPPS (keputusan 19 November 2026).
    Bagi hasil bulan t = r × (setoran bulan t + saldo bulan t−1), mulai bulan ke-`ms`, dengan r = bagi hasil per tahun ÷ 12 (nisbah 30% × pendapatan dana = bagi hasil per tahun).
-   Produk dengan dasar:'saldo' (Pendidikan Anak): bagi hasil bulan t = r × saldo bulan t−1, jadi setoran bulan ini baru mendapat bagi hasil bulan berikutnya.
-   Pendidikan Anak: 6,95% / 7,20% / 7,45% per tahun untuk 1–5 / 6–8 / 9–12 tahun. Qurban 6,10%. Nikah 8,40%. Pensiun 4,88% / 5,18% / 5,49%.
-   DP Rumah dan Deposito Proyek belum masuk model nisbah: masih memakai tarif per bulan lama (`rate`).
+   Produk dengan dasar:'saldo' (Pendidikan Anak dan tujuh produk usulan baru): bagi hasil bulan t = r × saldo bulan t−1, jadi setoran bulan ini baru mendapat bagi hasil bulan berikutnya.
+   Disetujui: Pendidikan Anak 6,95% / 7,20% / 7,26% per tahun (1–5 / 6–8 / 9–12 tahun), Qurban 6,10%, Nikah 7,26%.
+   Draf: Pensiun 4,88 / 5,18 / 5,49%, Rencana Haji 6,00%, Liburan 5,65%, Renovasi Rumah 6,00%, Sukarela 4,84%,
+   Hari Raya 1,07 / 4,55 / 4,90%, Wishlist 5,00%, Pemakaman 5,00%. `pend` = pendapatan dana per tahun (kolom I sheet BATAS).
+   DP Rumah dan Deposito Proyek tidak ada di file 10 tabungan dan belum masuk model nisbah: masih memakai tarif per bulan lama (`rate`).
    status: 'acc' = sudah disetujui · 'draf' = belum diputus komite.
    kunci: true = produk belum resmi; di versi publik pengaturannya terkunci (contoh tetap). */
 const AKSES_PENUH = false;   // true = versi internal (artifact privat) · false = versi publik (GitHub Pages)
@@ -509,17 +525,17 @@ const PRODUK = {
     ms:2, dasar:'saldo', pola:'bulanan',
     bul:{ mode:'range', min:1e5, max:5e6, def:1e5, step:5e4 }, anak:true,
     dur:{ unit:'tahun', mode:'range', min:1, max:12, def:6, cmp:[1,5,6,8,9,12] },
-    tier: y => y <= 5 ? { k:.0695, lab:'1–5 tahun' } : y <= 8 ? { k:.072, lab:'6–8 tahun' } : { k:.0745, lab:'9–12 tahun' },
+    tier: y => y <= 5 ? { k:.0695, pend:.231666666666667, lab:'1–5 tahun' } : y <= 8 ? { k:.072, pend:.24, lab:'6–8 tahun' } : { k:.0725899717444608, pend:.241966572481536, lab:'9–12 tahun' },
     tierSeg:[[1,'1–5 th'],[6,'6–8 th'],[9,'9–12 th']],
     tierInternal: y => { const t = INTERNAL_TIERS; return y <= 5 ? { k:t[0], lab:'1–5 tahun' } : y <= 8 ? { k:t[1], lab:'6–8 tahun' } : { k:t[2], lab:'9–12 tahun' }; },
-    syarat:['Setoran <b>Rp100.000–Rp5 jt</b>/bulan', 'Lama menabung <b>1–12 tahun</b>', 'Nisbah <b>30:70</b> (nasabah : KSPPS)', 'Bagi hasil <b>6,95%–7,45%/tahun</b> sesuai durasi', 'Berhenti sebelum jatuh tempo: <b>pokok saja</b>'],
+    syarat:['Setoran <b>Rp100.000–Rp5 jt</b>/bulan', 'Lama menabung <b>1–12 tahun</b>', 'Nisbah <b>30:70</b> (nasabah : KSPPS)', 'Bagi hasil <b>6,95%–7,26%/tahun</b> sesuai durasi', 'Berhenti sebelum jatuh tempo: <b>pokok saja</b>'],
     cmp:['durasi','bulanan'], cmpBul:[1e5, 5e5, 1e6, 25e5, 5e6], levers:['bulanan','durasi'], target:20e6, mampu:2e5, mampuLbl:'Kemampuan setor per bulan',
     berhenti:'Pokok saja, tanpa bagi hasil', ahliWaris:true,
     tag:'Nisbah 30:70 tercantum di akad' },
   qurban: { id:'qurban', nama:'Tabungan Qurban', pendek:'Qurban', status:'acc',
     desc:'Menabung untuk hewan qurban. Setoran Rp220.000 sampai Rp2 juta per bulan, lama menabung bebas dipilih 3 sampai 11 bulan. Tujuh penabung bisa patungan satu ekor sapi.',
     rail:'Rp220rb–2jt/bln · 3–11 bulan',
-    thn:.061, ms:2, pola:'bulanan',
+    thn:.061, pend:.203333333333333, ms:2, pola:'bulanan',
     bul:{ mode:'range', min:22e4, max:2e6, def:22e4, presets:[22e4, 5e5, 1e6, 2e6], step:1e4 },
     dur:{ unit:'bulan', mode:'range', min:3, max:11, def:11, cmp:[3,6,9,11] },
     syarat:['Setoran <b>Rp220.000–Rp2 jt</b>/bulan', 'Lama menabung <b>3–11 bulan</b>, bebas dipilih', 'Nisbah <b>30:70</b>, bagi hasil <b>6,10%/tahun</b> mulai bulan ke-2'],
@@ -529,7 +545,7 @@ const PRODUK = {
     desc:'Setoran rutin jangka panjang untuk dana hari tua. Lama menabung 1 sampai 15 tahun; makin lama, makin tinggi bagi hasil per tahun.',
     rail:'Rp150–500rb/bln · 1–15 th',
     ms:2, pola:'bulanan',
-    tier: y => y <= 5 ? { k:.0487903345534341, lab:'1–5 tahun' } : y <= 10 ? { k:.0518397304630236, lab:'6–10 tahun' } : { k:.0548891263726131, lab:'11–15 tahun' },
+    tier: y => y <= 5 ? { k:.048790334553434, pend:.162634448511447, lab:'1–5 tahun' } : y <= 10 ? { k:.0518397304630236, pend:.172799101543412, lab:'6–10 tahun' } : { k:.0548891263726132, pend:.182963754575377, lab:'11–15 tahun' },
     tierSeg:[[5,'1–5 th'],[10,'6–10 th'],[15,'11–15 th']],
     bul:{ mode:'range', min:15e4, max:5e5, def:5e5, step:1e4 },
     dur:{ unit:'tahun', mode:'range', min:1, max:15, def:15, cmp:[5,10,15] },
@@ -540,12 +556,87 @@ const PRODUK = {
     desc:'Setoran awal lalu setoran bulanan untuk biaya pernikahan. Nilai akhir dikunci saat akad. Wajib melampirkan surat keterangan menikah dari KUA.',
     dokumen:'Surat keterangan menikah dari KUA',
     rail:'Awal min. 10 jt · min. 1 jt/bln',
-    thn:.084, ms:2, pola:'awal',
+    thn:.0725899717444608, pend:.241966572481536, ms:2, pola:'awal',
     awal:{ min:1e7, def:1e7 }, bul:{ mode:'money', min:1e6, def:1e6, step:1e5 },
     dur:{ unit:'tahun', mode:'range', min:1, max:10, def:10, cmp:[3,5,7,10] },
-    syarat:['Setoran awal <b>min. Rp10 jt</b>', 'Setoran bulanan <b>min. Rp1 jt</b>', 'Nisbah <b>30:70</b>, bagi hasil <b>8,40%/tahun</b> mulai bulan ke-2', 'Nilai akhir <b>dikunci di akad</b>', 'Wajib <b>surat keterangan menikah dari KUA</b>'],
+    syarat:['Setoran awal <b>min. Rp10 jt</b>', 'Setoran bulanan <b>min. Rp1 jt</b>', 'Nisbah <b>30:70</b>, bagi hasil <b>7,26%/tahun</b> mulai bulan ke-2', 'Nilai akhir <b>dikunci di akad</b>', 'Wajib <b>surat keterangan menikah dari KUA</b>'],
     cmp:['durasi','bulanan'], cmpBul:[1e6, 15e5, 2e6, 3e6], levers:['bulanan','durasi'], target:15e7, mampu:15e5, mampuLbl:'Kemampuan setor per bulan',
     tag:'Nilai akhir dikunci di akad' },
+  haji: { id:'haji', nama:'Simpanan Rencana Haji', pendek:'Rencana Haji', status:'draf', kunci:true,
+    desc:'Menabung untuk setoran awal haji. Target saldo Rp25 juta; setelah tercapai dan rekening berumur 12 bulan, dana ditransfer ke rekening BPS Bipih atas nama anggota.',
+    rail:'Min. Rp100rb/bln · target Rp25 jt',
+    thn:.06, pend:.2, ms:2, dasar:'saldo', pola:'bulanan',
+    bul:{ mode:'money', min:1e5, def:5e5, step:5e4 },
+    dur:{ unit:'bulan', mode:'range', min:12, max:180, def:45, cmp:[12,24,36,45,60] },
+    syarat:['Setoran <b>min. Rp100.000</b>/bulan (dianjurkan Rp500.000)', 'Target saldo <b>Rp25 jt</b>, minimal 12 bulan', 'Nisbah <b>30:70</b>, bagi hasil <b>6,00%/tahun</b> dari saldo bulan lalu'],
+    cmp:['durasi','bulanan'], cmpBul:[1e5, 25e4, 5e5, 1e6], levers:['bulanan','durasi'], target:25e6, mampu:5e5, mampuLbl:'Kemampuan setor per bulan',
+    targetSaldo:25e6, targetLab:'Target setoran awal haji Rp25 jt',
+    info:[['Setelah target tercapai', 'Ditransfer ke rekening BPS Bipih atas nama anggota'], ['Porsi & jadwal berangkat', 'Tidak didaftarkan atau dijanjikan KSPPS']],
+    tag:'Target setoran awal haji Rp25 jt' },
+  liburan: { id:'liburan', nama:'Simpanan Liburan', pendek:'Liburan', status:'draf', kunci:true,
+    desc:'Menabung untuk rencana liburan atau perjalanan keluarga, jangka 12 sampai 36 bulan.',
+    rail:'Min. Rp100rb/bln · 12–36 bln',
+    thn:.0564588669123584, pend:.188196223041195, ms:2, dasar:'saldo', pola:'bulanan',
+    bul:{ mode:'money', min:1e5, def:5e5, step:5e4 },
+    dur:{ unit:'bulan', mode:'range', min:12, max:36, def:24, cmp:[12,18,24,30,36] },
+    syarat:['Setoran <b>min. Rp100.000</b>/bulan', 'Lama menabung <b>12–36 bulan</b>', 'Nisbah <b>30:70</b>, bagi hasil <b>5,65%/tahun</b> dari saldo bulan lalu'],
+    cmp:['durasi','bulanan'], cmpBul:[1e5, 25e4, 5e5, 1e6], levers:['bulanan','durasi'], target:12e6, mampu:5e5, mampuLbl:'Kemampuan setor per bulan',
+    info:[['Pencairan', 'Saat jatuh tempo, atau maks. 30 hari sebelum berangkat bila rekening berumur 12 bulan'], ['Bayar ke penyedia perjalanan', 'Hanya atas instruksi tertulis anggota']],
+    tag:'Untuk rencana perjalanan' },
+  renovasi: { id:'renovasi', nama:'Simpanan Renovasi Rumah', pendek:'Renovasi Rumah', status:'draf', kunci:true,
+    desc:'Menabung untuk DP membangun atau merenovasi rumah lewat RUMSY. Contoh: RAB Rp100 juta, DP 25% = Rp25 juta.',
+    rail:'Min. Rp500rb/bln · 12–60 bln',
+    thn:.06, pend:.2, ms:2, dasar:'saldo', pola:'bulanan',
+    bul:{ mode:'money', min:5e5, def:1e6, step:1e5 },
+    dur:{ unit:'bulan', mode:'range', min:12, max:60, def:24, cmp:[12,24,36,48,60] },
+    syarat:['Setoran <b>min. Rp500.000</b>/bulan', 'Lama menabung <b>12–60 bulan</b>', 'Nisbah <b>30:70</b>, bagi hasil <b>6,00%/tahun</b> dari saldo bulan lalu'],
+    cmp:['durasi','bulanan'], cmpBul:[5e5, 1e6, 15e5, 2e6], levers:['bulanan','durasi'], target:25e6, mampu:1e6, mampuLbl:'Kemampuan setor per bulan',
+    targetSaldo:25e6, targetLab:'Target DP 25% dari RAB Rp100 jt',
+    info:[['Pembiayaan RUMSY', 'Tetap melalui analisa Credit Risk']],
+    tag:'DP bangun & renovasi lewat RUMSY' },
+  sukarela: { id:'sukarela', nama:'Simpanan Sukarela', pendek:'Sukarela', status:'draf', kunci:true, tanpaJT:true,
+    desc:'Simpanan yang bisa disetor dan ditarik kapan saja. Menjadi rekening induk anggota: penampung saldo jatuh tempo dan rekening autodebet angsuran.',
+    rail:'Min. Rp25rb · tanpa jangka waktu',
+    thn:.0483933144963072, pend:.161311048321024, ms:2, dasar:'saldo', pola:'bulanan',
+    bul:{ mode:'money', min:25e3, def:1e5, step:25e3 },
+    dur:{ unit:'bulan', mode:'range', min:1, max:60, def:12, cmp:[3,6,12,24,36] },
+    syarat:['Setoran <b>min. Rp25.000</b>, saldo mengendap min. Rp25.000', '<b>Tanpa jangka waktu</b> (simulasi 1–60 bulan)', 'Nisbah <b>30:70</b>, bagi hasil <b>4,84%/tahun</b> dari saldo bulan lalu'],
+    cmp:['durasi','bulanan'], cmpBul:[25e3, 5e4, 1e5, 25e4], levers:['bulanan','durasi'], target:2e6, mampu:1e5, mampuLbl:'Kemampuan setor per bulan',
+    info:[['Penarikan', 'Kapan saja; di atas batas harian dengan pemberitahuan H-1']],
+    tag:'Rekening induk anggota' },
+  hariraya: { id:'hariraya', nama:'Simpanan Kebutuhan Hari Raya', pendek:'Hari Raya', status:'draf', kunci:true,
+    desc:'Menabung rutin untuk kebutuhan Idulfitri. Pencairan serentak H-21 sampai H-14 Idulfitri; bagi hasil mengikuti lama menabung dalam satu siklus.',
+    rail:'Min. Rp25rb/bln · siklus Idulfitri',
+    ms:2, dasar:'saldo', pola:'bulanan',
+    tier: n => n <= 3 ? { k:.0107271847133481, pend:.035757282377827, lab:'Opsi B (±3 bulan)' } : n <= 12 ? { k:.0454897156265287, pend:.151632385421762, lab:'siklus 12 bulan' } : { k:.0489579031654307, pend:.163193010551436, lab:'Opsi A (±15 bulan)' },
+    tierSeg:[[3,'1–3 bln'],[12,'4–12 bln'],[15,'13–15 bln']],
+    bul:{ mode:'money', min:25e3, def:1e5, step:25e3 },
+    dur:{ unit:'bulan', mode:'range', min:1, max:15, def:12, cmp:[3,12,15] },
+    syarat:['Setoran <b>min. Rp25.000</b>/bulan, boleh lebih sering', 'Satu siklus sampai <b>Idulfitri</b> (±3, 12, atau ±15 bulan)', 'Nisbah <b>30:70</b>, bagi hasil <b>1,07%–4,90%/tahun</b> dari saldo bulan lalu'],
+    cmp:['durasi','bulanan'], cmpBul:[25e3, 5e4, 1e5, 25e4], levers:['bulanan','durasi'], target:15e5, mampu:1e5, mampuLbl:'Kemampuan setor per bulan',
+    info:[['Pencairan', 'Serentak H-21 s.d. H-14 Idulfitri']],
+    doneT:'Pencairan menjelang Idulfitri', tag:'Cair menjelang Idulfitri' },
+  wishlist: { id:'wishlist', nama:'Simpanan Wishlist', pendek:'Wishlist', status:'draf', kunci:true,
+    desc:'Menabung untuk barang impian yang halal. Pembelian bisa lewat KSPPS: wakalah, pembelian barang, lalu akad murabahah.',
+    rail:'Min. Rp100rb/bln · 12–36 bln',
+    thn:.05, pend:.166666666666667, ms:2, dasar:'saldo', pola:'bulanan',
+    bul:{ mode:'money', min:1e5, def:3e5, step:5e4 },
+    dur:{ unit:'bulan', mode:'range', min:12, max:36, def:18, cmp:[12,18,24,30,36] },
+    syarat:['Setoran <b>min. Rp100.000</b>/bulan', 'Lama menabung <b>12–36 bulan</b>', 'Nisbah <b>30:70</b>, bagi hasil <b>5,00%/tahun</b> dari saldo bulan lalu'],
+    cmp:['durasi','bulanan'], cmpBul:[1e5, 3e5, 5e5, 1e6], levers:['bulanan','durasi'], target:5e6, mampu:3e5, mampuLbl:'Kemampuan setor per bulan',
+    targetSaldo:5e6, targetLab:'Contoh harga barang Rp5 jt',
+    info:[['Pembelian lewat KSPPS', 'Wakalah lalu murabahah; barang wajib halal; murabahah lanjutan melalui analisa Lending']],
+    tag:'Untuk barang impian yang halal' },
+  pemakaman: { id:'pemakaman', nama:'Simpanan Pemakaman', pendek:'Pemakaman', status:'draf', kunci:true, tanpaJT:true,
+    desc:'Simpanan untuk biaya pemakaman (rumah masa depan). Setelah 12 bulan rekening terbuka tanpa jatuh tempo.',
+    rail:'Min. Rp100rb/bln · jangka panjang',
+    thn:.05, pend:.166666666666667, ms:2, dasar:'saldo', pola:'bulanan',
+    bul:{ mode:'money', min:1e5, def:2e5, step:5e4 },
+    dur:{ unit:'tahun', mode:'range', min:1, max:15, def:5, cmp:[1,2,5,10,15] },
+    syarat:['Setoran <b>min. Rp100.000</b>/bulan', 'Setelah 12 bulan <b>tanpa jatuh tempo</b> (simulasi 1–15 tahun)', 'Nisbah <b>30:70</b>, bagi hasil <b>5,00%/tahun</b> dari saldo bulan lalu'],
+    cmp:['durasi','bulanan'], cmpBul:[1e5, 2e5, 5e5, 1e6], levers:['bulanan','durasi'], target:15e6, mampu:2e5, mampuLbl:'Kemampuan setor per bulan',
+    info:[['Saat anggota wafat', 'Akad berakhir; biaya jenazah cair hari yang sama sampai plafon Pengurus'], ['Sisa saldo', 'Diserahkan ke ahli waris sesuai surat keterangan ahli waris']],
+    tag:'Biaya pemakaman · rumah masa depan' },
   dprumah: { id:'dprumah', nama:'Tabungan DP Rumah', pendek:'DP Rumany & Rumsy', status:'draf', kunci:true,
     desc:'Siapkan uang muka rumah untuk program Rumany atau Rumsy. Satu setoran awal, setoran bulanan boleh ditambah.',
     rail:'Setoran awal · 12 atau 24 bln',
@@ -565,7 +656,7 @@ const PRODUK = {
     cmp:['penempatan'], cmpPen:[15e6, 25e6, 49e6, 1e8], levers:['penempatan'], target:6e7, mampu:5e7, mampuLbl:'Dana yang siap ditempatkan',
     tag:'Modal + keuntungan cair bulan ke-6' }
 };
-const ORDER = ['pendidikan','qurban','pensiun','nikah','dprumah','deposito'];
+const ORDER = ['pendidikan','qurban','nikah','pensiun','haji','liburan','renovasi','sukarela','hariraya','wishlist','pemakaman','dprumah','deposito'];
 const terkunci = P => !!P.kunci && !AKSES_PENUH;
 function chipStatus(P){
   if (P.status === 'acc') return '<span class="chip ok">Disetujui</span>';
@@ -608,7 +699,6 @@ function setoranBulan(P, i, t){
 }
 const NISBAH = .3;                       // bagian nasabah
 const PMAX_SAFAR = .241966572481536;     // pendapatan dana tertinggi pool Safar = 26,89% × porsi 90% (sheet BATAS)
-const PEND_PENSIUN = [.162634448511447, .172799101543412, .182963754575377];   // pool umum × porsi 80/85/90%
 function build(prod, raw){ const P = PRODUK[prod]; return simulate(P, clean(P, raw)); }
 const tahunan = P => P.rate == null;   // true = model nisbah (bagi hasil per tahun)
 function simulate(P, i){
@@ -628,7 +718,7 @@ function simulate(P, i){
   // Pembagian hasil nisbah: pendapatan dana per tahun (imbal hasil penyaluran × porsi disalurkan), bagian nasabah 30%, sisanya KSPPS
   let split = null;
   if (k != null && r > 0){
-    const pend = P.id === 'pensiun' ? PEND_PENSIUN[i.durasi <= 5 ? 0 : i.durasi <= 10 ? 1 : 2] : Math.min(k / NISBAH, PMAX_SAFAR);
+    const pend = (tier && tier.pend) || P.pend || Math.min(k / NISBAH, PMAX_SAFAR);   // tier internal: pendapatan tertinggi pool Safar
     const pendapatan = margin / r * pend / 12, nasabah = NISBAH * pendapatan;
     split = { pend, pendapatan, nasabah, tambahan: Math.max(0, margin - nasabah), kspps: pendapatan - margin };
   }
@@ -675,8 +765,11 @@ const ICON = {
 /* ===== Render: rel produk ===== */
 function renderRail(){
   if (!$('rail').children.length){
-    $('rail').innerHTML = ORDER.map(id => { const P = PRODUK[id];
-      return `<button class="prog" type="button" data-p="${id}" aria-pressed="false"><span class="pn">${P.nama}</span><span class="pd">${P.rail}</span>${chipStatus(P)}</button>`; }).join('');
+    const btn = id => { const P = PRODUK[id];
+      return `<button class="prog" type="button" data-p="${id}" aria-pressed="false"><span class="pn">${terkunci(P) ? ICON.lock : ''}${P.nama}</span><span class="pd">${P.rail}</span></button>`; };
+    const acc = ORDER.filter(id => PRODUK[id].status === 'acc'), draf = ORDER.filter(id => PRODUK[id].status !== 'acc');
+    $('rail').innerHTML = `<div class="rail-grp" role="group" aria-label="Tabungan yang sudah disetujui"><div class="rail-h"><span class="chip ok">Disetujui</span>${acc.length} tabungan sudah diputus komite</div><div class="rail-row acc">${acc.map(btn).join('')}</div></div>
+      <div class="rail-grp" role="group" aria-label="Produk draf"><div class="rail-h"><span class="chip mute">Draf</span>${draf.length} produk belum diputus komite · ${AKSES_PENUH ? 'versi internal: bisa diatur untuk kajian Credit Risk' : 'contoh tetap, tidak bisa diubah'}</div><div class="rail-row draf">${draf.map(btn).join('')}</div></div>`;
   }
   $('rail').querySelectorAll('[data-p]').forEach(b => b.setAttribute('aria-pressed', b.dataset.p === S.prod));
 }
@@ -791,6 +884,10 @@ function extras(c){
   if (P.id === 'qurban') x.push(['Patungan 7 orang', rp(c.nilai * 7)]);
   if (P.id === 'dprumah') x.push(['Setara DP 25% rumah', rp(c.nilai / .25)]);
   if (P.id === 'deposito') x.push(['Keuntungan bersih', `${rp(c.margin)} (${pc(c.margin / c.pokok, 1)})`]);
+  if (P.id === 'renovasi') x.push(['Cukup untuk DP 25% RAB senilai', rp(c.nilai / .25)]);
+  if (P.targetSaldo){ const hit = c.rows.find(r => r.saldo >= P.targetSaldo - 0.5);
+    x.push([P.targetLab, hit ? `Tercapai bulan ke-${hit.t} (${mlab(S.mulai, hit.t - 1)})` : `Kurang ${rp(P.targetSaldo - c.nilai)}`]); }
+  if (P.info) x.push(...P.info);
   if (P.berhenti) x.push(['Berhenti sebelum jatuh tempo', P.berhenti]);
   if (P.ahliWaris) x.push(['Force majeure', 'Dialihkan ke ahli waris']);
   if (P.dokumen) x.push(['Dokumen wajib', P.dokumen]);
@@ -805,7 +902,7 @@ function renderTicket(c){
   if (c.internal){ const t = INTERNAL_TIERS;
     $('intBanner').textContent = `SIMULASI INTERNAL — disetujui Credit Risk: ${S.approval.nama} · ${S.approval.waktu}. Margin ${pc2(t[0])} / ${pc2(t[1])} / ${pc2(t[2])} melanggar batas bagi hasil 9% per tahun (Permenkop UKM 8/2023 Pasal 26 ayat 4). Angka ini TIDAK dipublikasikan ke masyarakat atau nasabah dan tidak boleh dikirim ke calon nasabah.`; }
   $('tkActions').hidden = terkunci(P) || c.internal; if (terkunci(P) || c.internal) $('copyBox').hidden = true;
-  $('tkHero').innerHTML = `<span class="lab">${P.pola === 'termin' ? 'Modal + keuntungan cair' : 'Nilai akhir saat jatuh tempo'}</span>
+  $('tkHero').innerHTML = `<span class="lab">${P.pola === 'termin' ? 'Modal + keuntungan cair' : P.tanpaJT ? 'Saldo di akhir simulasi' : 'Nilai akhir saat jatuh tempo'}</span>
     <span class="val">${rp(c.nilai)}</span>
     <span class="then">dari ${P.pola === 'termin' ? 'penempatan' : 'total setoran'} ${rp(c.pokok)}${i.anak > 1 ? ` · ${rp(c.nilai / i.anak)} per anak` : ''}</span>`;
   const setoranTxt = P.pola === 'termin' ? rp(i.penempatan) : P.pola === 'awal' ? rp(i.awal) : `${rp(i.bulanan * i.anak)}`;
@@ -813,7 +910,7 @@ function renderTicket(c){
   $('tkTrio').innerHTML = `
     <div><span class="k">${P.pola === 'termin' ? 'Penempatan' : P.pola === 'awal' ? 'Setoran awal' : 'Setoran'}</span><span class="v">${setoranTxt}</span><span class="s">${setoranSub}</span></div>
     <div><span class="k">Total ${tahunan(P) ? 'bagi hasil' : 'margin'}</span><span class="v">${rp(c.margin)}</span><span class="s">${tahunan(P) ? 'estimasi ' : 'tingkat '}${c.rateLab} · +${pc(c.margin / c.pokok, 1)}</span></div>
-    <div><span class="k">Jatuh tempo</span><span class="v">${mlab(ym, c.N - 1)}</span><span class="s">bulan ke-${c.N} dari mulai menabung</span></div>`;
+    <div><span class="k">${P.tanpaJT ? 'Akhir simulasi' : 'Jatuh tempo'}</span><span class="v">${mlab(ym, c.N - 1)}</span><span class="s">bulan ke-${c.N} dari mulai menabung</span></div>`;
   const stub = [
     [P.pola === 'termin' ? 'Mulai penempatan' : 'Mulai menabung', mlab(ym, 0)],
     [P.pola === 'termin' ? 'Lama penempatan' : 'Lama menabung', `${c.N} bulan`],
@@ -863,6 +960,41 @@ const WA = {
     'Setoran Rp150.000 – Rp500.000 per bulan',
     'Lama menabung 1 – 15 tahun; makin lama, makin tinggi bagi hasil per tahun',
     'Bagi hasil dihitung setiap bulan dari saldo tabungan dengan nisbah 30:70 (nasabah : KSPPS), mulai bulan ke-2'] },
+  haji: { pitch:'Siapkan setoran awal haji dengan menabung rutin setiap bulan.', ket:[
+    'Setoran minimal Rp100.000 per bulan (dianjurkan Rp500.000)',
+    'Target saldo Rp25.000.000 (setoran awal haji yang berlaku), minimal 12 bulan',
+    'Bagi hasil dihitung setiap bulan dari saldo bulan sebelumnya dengan nisbah 30:70 (nasabah : KSPPS), mulai bulan ke-2',
+    'Setelah target tercapai, dana ditransfer ke rekening BPS Bipih atas nama anggota',
+    'KSPPS tidak mendaftarkan porsi dan tidak menjanjikan jadwal keberangkatan'] },
+  liburan: { pitch:'Siapkan dana liburan keluarga dengan menabung rutin setiap bulan.', ket:[
+    'Setoran minimal Rp100.000 per bulan',
+    'Lama menabung 12 – 36 bulan',
+    'Bagi hasil dihitung setiap bulan dari saldo bulan sebelumnya dengan nisbah 30:70 (nasabah : KSPPS), mulai bulan ke-2',
+    'Cair saat jatuh tempo, atau maksimal 30 hari sebelum berangkat bila rekening berumur 12 bulan'] },
+  renovasi: { pitch:'Siapkan DP membangun atau merenovasi rumah lewat program RUMSY.', ket:[
+    'Setoran minimal Rp500.000 per bulan',
+    'Lama menabung 12 – 60 bulan',
+    'Bagi hasil dihitung setiap bulan dari saldo bulan sebelumnya dengan nisbah 30:70 (nasabah : KSPPS), mulai bulan ke-2',
+    'Persetujuan pembiayaan RUMSY tetap melalui analisa Credit Risk'] },
+  sukarela: { pitch:'Simpanan fleksibel yang bisa disetor dan ditarik kapan saja.', ket:[
+    'Setoran minimal Rp25.000, saldo mengendap minimal Rp25.000',
+    'Tanpa jangka waktu',
+    'Bagi hasil dihitung setiap bulan dari saldo bulan sebelumnya dengan nisbah 30:70 (nasabah : KSPPS), mulai bulan ke-2',
+    'Penarikan di atas batas harian dengan pemberitahuan H-1'] },
+  hariraya: { pitch:'Siapkan kebutuhan Idulfitri dengan menabung rutin setiap bulan.', ket:[
+    'Setoran minimal Rp25.000 per bulan, boleh lebih sering',
+    'Pencairan serentak H-21 sampai H-14 Idulfitri',
+    'Bagi hasil dihitung setiap bulan dari saldo bulan sebelumnya dengan nisbah 30:70 (nasabah : KSPPS), mulai bulan ke-2'] },
+  wishlist: { pitch:'Wujudkan barang impian yang halal dengan menabung rutin setiap bulan.', ket:[
+    'Setoran minimal Rp100.000 per bulan',
+    'Lama menabung 12 – 36 bulan',
+    'Bagi hasil dihitung setiap bulan dari saldo bulan sebelumnya dengan nisbah 30:70 (nasabah : KSPPS), mulai bulan ke-2',
+    'Pembelian bisa lewat KSPPS dengan akad wakalah lalu murabahah'] },
+  pemakaman: { pitch:'Siapkan biaya pemakaman (rumah masa depan) dengan setoran rutin.', ket:[
+    'Setoran minimal Rp100.000 per bulan',
+    'Setelah 12 bulan, rekening terbuka tanpa jatuh tempo',
+    'Bagi hasil dihitung setiap bulan dari saldo bulan sebelumnya dengan nisbah 30:70 (nasabah : KSPPS), mulai bulan ke-2',
+    'Saat anggota wafat, biaya jenazah cair di hari yang sama sampai plafon yang ditetapkan Pengurus; sisa saldo diserahkan ke ahli waris'] },
   dprumah: { pitch:'Siapkan uang muka rumah untuk program Rumany atau Rumsy.', ket:[
     'Setoran awal minimal Rp10.000.000',
     'Setoran bulanan opsional, minimal Rp1.000.000 bila diisi',
@@ -889,6 +1021,7 @@ function waText(c){
   L.push(`• *Estimasi diterima: ±${rpw(c.nilai)}*, jatuh tempo ${mlab(ym, c.N - 1, true)}`);
   if (P.id === 'qurban') L.push(`• Bila patungan 7 orang: ±${rpw(c.nilai * 7)}`);
   if (P.id === 'dprumah') L.push(`• Cukup untuk DP 25% rumah seharga ±${rpw(c.nilai / .25)}`);
+  if (P.id === 'renovasi') L.push(`• Cukup untuk DP 25% RAB senilai ±${rpw(c.nilai / .25)}`);
   L.push('', '_Angka di atas adalah estimasi dan belum mengikat, bukan jaminan hasil. Nilai final mengikuti akad yang ditandatangani nasabah dan KSPPS Syirkah Kebaikan Indonesia._');
   if (P.status === 'draf') L.push('_Produk ini masih dalam kajian, sehingga angka dapat berubah._');
   L.push('', '*Informasi & pendaftaran*', 'KSPPS Syirkah Kebaikan Indonesia', 'Jl. Kijang No. 34 A, Maricaya, Kota Makassar', 'Telp/WA: 0856-0836-5555', 'Email: syirkahkebaikanindonesia@gmail.com');
@@ -906,7 +1039,7 @@ function renderCompare(c){
   if (mode === 'durasi'){
     cur = c.i.durasi; set = [...P.dur.cmp]; mk = v => build(P.id, inp({ durasi:v }));
     lab = v => `${durLab(P, v)}${P.tier ? ` · ${pc2((c.internal ? P.tierInternal : P.tier)(v).k)}/thn` : ''}`;
-    sub = `Setoran sama, durasi berbeda. ${P.tier ? `Bagi hasil per tahun naik di ${P.tierSeg.slice(1).map(x => x[1].split('–')[0]).join(' dan ')} tahun. ` : ''}Ketuk salah satu untuk memakainya.`;
+    sub = `Setoran sama, durasi berbeda. ${P.tier ? `Bagi hasil per tahun naik di ${P.tierSeg.slice(1).map(x => x[1].split('–')[0]).join(' dan ')} ${P.dur.unit}. ` : ''}Ketuk salah satu untuk memakainya.`;
   } else if (mode === 'bulanan'){
     cur = c.i.bulanan; set = [...P.cmpBul]; mk = v => build(P.id, inp({ bulanan:v }));
     const auto = P.dur.mode === 'auto';
@@ -1003,8 +1136,8 @@ function renderTimeline(c){
     items.push({ cls:'pay', ic:ICON.pen, t:'Akad & setoran pertama', w:`${mlab(ym, 0)} · bulan 1`, a:rp(i.bulanan * i.anak) });
     if (c.N >= 2) items.push({ cls:'pay', ic:ICON.coin, t:`Setoran ke-2 s.d. ${c.N}`, w:`${range(2, c.N)} · ${brange(2, c.N)}`, a:rp(i.bulanan * i.anak), sub:'per bulan' });
   }
-  const doneT = P.id === 'qurban' ? 'Jatuh tempo, dana siap untuk qurban' : P.pola === 'termin' ? 'Modal + keuntungan cair' : 'Jatuh tempo & pencairan';
-  items.push({ cls:'done', ic:ICON.check, t:doneT, w:`${mlab(ym, c.N - 1, true)} · bulan ${c.N}`, a:rp(c.nilai), sub: P.pola === 'termin' ? 'modal + keuntungan' : 'nilai akhir' });
+  const doneT = P.doneT || (P.id === 'qurban' ? 'Jatuh tempo, dana siap untuk qurban' : P.pola === 'termin' ? 'Modal + keuntungan cair' : P.tanpaJT ? 'Saldo di akhir simulasi' : 'Jatuh tempo & pencairan');
+  items.push({ cls:'done', ic:ICON.check, t:doneT, w:`${mlab(ym, c.N - 1, true)} · bulan ${c.N}`, a:rp(c.nilai), sub: P.pola === 'termin' ? 'modal + keuntungan' : P.tanpaJT ? 'saldo' : 'nilai akhir' });
   $('timeline').innerHTML = items.map(x => `<li class="${x.cls}"><span class="dot">${x.ic}</span><div><div class="t">${x.t}</div><div class="w">${x.w}</div></div><div class="a">${x.a}${x.sub ? `<small>${x.sub}</small>` : ''}</div></li>`).join('');
   $('detailWrap').hidden = !S.detail; $('detailBtn').setAttribute('aria-expanded', S.detail);
   $('detailBtn').textContent = S.detail ? 'Sembunyikan rincian' : 'Rincian per bulan';
